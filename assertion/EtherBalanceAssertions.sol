@@ -1,40 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-interface Assertion {
-    enum TriggerType {
-        STORAGE,
-        ETHER,
-        BOTH
-    }
+import {Assertion} from "../lib/credible-std/Assertion.sol";
 
-    struct Trigger {
-        TriggerType triggerType;
-        bytes4 fnSelector;
-    }
-}
+contract EtherBalanceAssertions is Assertion {
+    address public smartContract = address(0x0000000000000000000000000000000000000000);
 
-abstract contract EtherBalanceAssertions is Assertion {
-    address public smartContract;
-    uint256 public previousBalance;
-
-    function fnSelectors() external pure returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](1);
-        triggers[0] = Trigger(TriggerType.ETHER, this.assertionEther.selector);
+    function fnSelectors() external pure override returns (Trigger[] memory) {
+        Trigger[] memory triggers = new Trigger[](3);
+        triggers[0] = Trigger(TriggerType.ETHER, this.assertionEtherBalance.selector);
+        triggers[1] = Trigger(TriggerType.ETHER, this.assertionEtherReduced90.selector);
+        triggers[2] = Trigger(TriggerType.ETHER, this.assertionEtherDrained.selector);
         return triggers;
-    }
-
-    function setUp() public {
-        smartContract = address(0x0000000000000000000000000000000000000000); // init to something real
-        previousBalance = address(smartContract).balance;
-    }
-
-
-    function assertionEther() external returns (bool) {
-        return
-            assertionEtherBalance() &&
-            assertionEtherReduced90() &&
-            assertionEtherDrained(); // This syntax should not be used, myabe make all of it as requires with errors for the specific functions
     }
 
     // Unexpected ether balance
@@ -43,16 +20,21 @@ abstract contract EtherBalanceAssertions is Assertion {
     // where the contract address has been funded prior to deployment
     // Don't allow ether balance to be more than 0
     function assertionEtherBalance() external returns (bool) {
+        ph.forkPostState();
         return address(smartContract).balance == 0;
     }
 
     // Don't allow ether balance to be reduced by more than 90%
     function assertionEtherReduced90() external returns (bool) {
+        ph.forkPreState();
+        uint256 previousBalance = address(smartContract).balance;
+        ph.forkPostState();
         return address(smartContract).balance >= (previousBalance / 10);
     }
 
     // Dont allow ether balance to be drained
     function assertionEtherDrained() external returns (bool) {
+        ph.forkPostState();
         return address(smartContract).balance >= 0;
     }
 }

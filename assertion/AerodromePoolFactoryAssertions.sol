@@ -1,70 +1,68 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {PoolFactory} from "lib/PoolFactory.sol";
-
-interface Assertion {
-    enum TriggerType {
-        STORAGE,
-        ETHER,
-        BOTH
-    }
-
-    struct Trigger {
-        TriggerType triggerType;
-        bytes4 fnSelector;
-    }
-}
+import {PoolFactory} from "../lib/PoolFactory.sol";
+import {Assertion} from "../lib/credible-std/Assertion.sol";
 
 abstract contract AerodromePoolFactoryAssertions is Assertion {
     PoolFactory public poolFactory = PoolFactory(0x420DD381b31aEf6683db6B902084cB0FFECe40Da); // AeroDrome PoolFactory on Base
-    address public poolPauser; // Address of the pool pauser
-    address public implementation; // Current address of the pool implementation
-    address public voter; // Address of the Voter contract
-    address public feeManager; // Address of the fee manager
-    uint256 public fee; // Fee for the pool
-    uint256 public maxFee; // Maximum fee for the pool
 
-    function fnSelectors() external pure returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](1);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionStorage.selector);
+    function fnSelectors() external pure override returns (Trigger[] memory) {
+        Trigger[] memory triggers = new Trigger[](6);
+        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionPoolPauserChanged.selector);
+        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionImplementationChanged.selector);
+        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionVoterChanged.selector);
+        triggers[3] = Trigger(TriggerType.STORAGE, this.assertionFeeManagerChanged.selector);
+        triggers[4] = Trigger(TriggerType.STORAGE, this.assertionFeeChanged.selector);
+        triggers[5] = Trigger(TriggerType.STORAGE, this.assertionMaxFeeChanged.selector);
         return triggers;
     }
 
-    function setUp() public {
-        poolPauser = poolFactory.pauser();
-        implementation = poolFactory.implementation();
-        voter = poolFactory.voter();
-        feeManager = poolFactory.feeManager();
-        fee = poolFactory.fee();
-        maxFee = poolFactory.maxFee();
-    }
-
-    function assertionStorage() external returns (bool) {
-        return true;
-    }
-
     function assertionPoolPauserChanged() external returns (bool) {
-        return poolFactory.pauser() == poolPauser;
+        ph.forkPreState();
+        address prevPauser = poolFactory.pauser();
+        ph.forkPostState();
+        address newPauser = poolFactory.pauser();
+        return prevPauser == newPauser;
     }
 
     function assertionImplementationChanged() external returns (bool) {
-        return poolFactory.implementation() == implementation;
+        ph.forkPreState();
+        address prevImplementation = poolFactory.implementation();
+        ph.forkPostState();
+        address newImplementation = poolFactory.implementation();
+        return prevImplementation == newImplementation;
     }
 
     function assertionVoterChanged() external returns (bool) {
-        return poolFactory.voter() == voter;
+        ph.forkPreState();
+        address prevVoter = poolFactory.voter();
+        ph.forkPostState();
+        address newVoter = poolFactory.voter();
+        return prevVoter == newVoter;
     }
 
     function assertionFeeManagerChanged() external returns (bool) {
-        return poolFactory.feeManager() == feeManager;
+        ph.forkPreState();
+        address prevFeeManager = poolFactory.feeManager();
+        ph.forkPostState();
+        address newFeeManager = poolFactory.feeManager();
+        return prevFeeManager == newFeeManager;
     }
 
     function assertionFeeChanged() external returns (bool) {
-        return poolFactory.fee() == fee;
+        ph.forkPreState();
+        uint256 prevFee = poolFactory.fee();
+        ph.forkPostState();
+        uint256 newFee = poolFactory.fee();
+        return prevFee == newFee;
     }
 
     function assertionMaxFeeChanged() external returns (bool) {
-        return poolFactory.maxFee() == maxFee;
+        ph.forkPreState();
+        uint256 prevMaxFee = poolFactory.maxFee();
+        ph.forkPostState();
+        uint256 newMaxFee = poolFactory.maxFee();
+        return prevMaxFee == newMaxFee;
     }
 }

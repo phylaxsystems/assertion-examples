@@ -2,40 +2,19 @@
 pragma solidity 0.8.28;
 
 import {RoninBridge} from "lib/RoninBridge.sol";
-
-interface Assertion {
-    enum TriggerType {
-        STORAGE,
-        ETHER,
-        BOTH
-    }
-
-    struct Trigger {
-        TriggerType triggerType;
-        bytes4 fnSelector;
-    }
-}
+import {Assertion} from "lib/credible-std/Assertion.sol";
 
 contract RoninBridgeAssertions is Assertion, RoninBridge {
-    RoninBridge public roninBridge;
-    uint256 public previousTotalWeight;
+    RoninBridge public roninBridge = RoninBridge(0x0000000000000000000000000000000000000000);
 
-    function fnSelectors() external pure returns (Trigger[] memory) {
+    function fnSelectors() external pure override returns (Trigger[] memory) {
         Trigger[] memory triggers = new Trigger[](1);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionStorage.selector);
+        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionTotalWeightNeverZero.selector);
         return triggers;
     }
 
-    function setUp() public {
-        roninBridge = RoninBridge(0x0000000000000000000000000000000000000000);
-        previousTotalWeight = roninBridge.totalWeight();
-    }
-
-    function assertionStorage() external returns (bool) {
-        return assertionTotalWeightNeverZero();
-    }
-
     function assertionTotalWeightNeverZero() external returns (bool) {
+        ph.forkPostState();
         return roninBridge.totalWeight() > 0;
     }
 }

@@ -1,67 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {SafeProxy} from "../lib/SafeProxy.sol";
+import {Safe} from "../lib/Safe.sol";
+import {Assertion} from "../lib/credible-std/Assertion.sol";
 
-interface Assertion {
-    enum TriggerType {
-        STORAGE,
-        ETHER,
-        BOTH
-    }
-
-    struct Trigger {
-        TriggerType triggerType;
-        bytes4 fnSelector;
-    }
-}
-
-contract SafeProxyAssertions is Assertion, SafeProxy {
-    address public constant FACTORY_ADDRESS = 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67;
-    address public constant SAFE_SINGLETON = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
-    address public constant SPECIFIC_PROXY = 0xd3c6D54A4C16F0938b7AB4937C7fF5ec64a44E4b;
-
-    SafeProxyFactory public factory;
-    Safe public safeSingleton;
-    SafeProxy public specificProxy;
+contract SafeProxyAssertions is Assertion, Safe {
     Safe public safe;
-    uint256 public previousNonce;
-    uint256 public previousThreshold;
-    uint256 public previousChainId;
 
-    function fnSelectors() external pure returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](1);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionStorage.selector);
+    function fnSelectors() external pure override returns (Trigger[] memory) {
+        Trigger[] memory triggers = new Trigger[](5);
+        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionValidThreshold.selector);
+        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionThresholdNotOne.selector);
+        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionInvariantNonce.selector);
+        triggers[3] = Trigger(TriggerType.STORAGE, this.assertionNoDuplicateOwners.selector);
+        triggers[4] = Trigger(TriggerType.STORAGE, this.assertionChainIdNeverChanges.selector);
         return triggers;
-    }
-
-    function setUp() public {
-        factory = SafeProxyFactory(FACTORY_ADDRESS);
-        safeSingleton = Safe(SAFE_SINGLETON);
-        specificProxy = SafeProxy(SPECIFIC_PROXY);
-        safe = Safe(specificProxy.owner());
-        previousNonce = safe.nonce();
-        previousThreshold = safe.getThreshold();
-        previousChainId = safe.getChainId();
-    }
-
-    function assertionStorage() external returns (bool) {
-        return
-            assertionValidThreshold() &&
-            assertionThresholdNotOne() &&
-            assertionInvariantNonce() &&
-            assertionNoDuplicateOwners() &&
-            assertionChainIdNeverChanges();
     }
 
     // The threshold should always be greater than zero and less than or equal to the number of owners
     function assertionValidThreshold() external returns (bool) {
+        ph.forkPostState();
+        uint256 threshold = safe.getThreshold();
+        address[] memory owners = safe.getOwners();
         return threshold > 0 && threshold <= owners.length;
     }
 
     // The threshold should never be set to one if threshold was previously greater than one
     function assertionThresholdNotOne() external returns (bool) {
+        ph.forkPreState();
         uint256 newThreshold = safe.getThreshold();
+        ph.forkPostState();
         if (previousThreshold > 1) {
             return newThreshold > 1;
         }
@@ -70,12 +38,17 @@ contract SafeProxyAssertions is Assertion, SafeProxy {
 
     // The nonce should always increase by 1
     function assertionInvariantNonce() external returns (bool) {
+        ph.forkPreState();
+        uint256 prevNonce = safe.nonce();
+        ph.forkPostState();
         uint256 newNonce = safe.nonce();
-        return newNonce == previousNonce + 1;
+        return newNonce == prevNonce + 1;
     }
 
     // Must not have two identical owners
     function assertionNoDuplicateOwners() external returns (bool) {
+        ph.forkPostState();
+        address[] memory owners = safe.getOwners();
         for (uint256 i = 0; i < owners.length; i++) {
             for (uint256 j = i + 1; j < owners.length; j++) {
                 if (owners[i] == owners[j]) {
@@ -88,7 +61,10 @@ contract SafeProxyAssertions is Assertion, SafeProxy {
 
     // The chain ID should never change
     function assertionChainIdNeverChanges() external returns (bool) {
+        ph.forkPreState();
+        uint256 prevChainId = safe.getChainId();
+        ph.forkPostState();
         uint256 newChainId = safe.getChainId();
-        return newChainId == previousChainId;
+        return prevChainId == newChainId;
     }
 }
