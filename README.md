@@ -76,7 +76,9 @@ Potentially with a cheatcode that allows the Credible Layer to check the gas lim
 Need to find a good recent example of this.
 
 ### ABI Hash Collisions
-Needs research.
+Currently it is not possible to write assertions that can prevent ABI hash collisions since this in most cases will involve checking input parameters to function calls.
+With an added cheatcode that allows the Credible Layer to fetch the input parameters of a function call it might be possible to write assertions for this.
+An example of how this could look is in the [RoyaltyRegistryAssertions.sol](./assertion/RoyaltyRegistryAssertions.sol) file.
 
 ### Compiler Bugs
 Needs research. It might be that the Vyper compiler bug hack could have been prevented with assertions.
