@@ -6,12 +6,11 @@ import {Assertion} from "../lib/credible-std/Assertion.sol";
 contract EtherBalanceAssertions is Assertion {
     address public smartContract = address(0x0000000000000000000000000000000000000000);
 
-    function fnSelectors() external pure override returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](3);
-        triggers[0] = Trigger(TriggerType.ETHER, this.assertionEtherBalance.selector);
-        triggers[1] = Trigger(TriggerType.ETHER, this.assertionEtherReduced90.selector);
-        triggers[2] = Trigger(TriggerType.ETHER, this.assertionEtherDrained.selector);
-        return triggers;
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](3);
+        assertions[0] = this.assertionEtherBalance.selector;
+        assertions[1] = this.assertionEtherReduced90.selector;
+        assertions[2] = this.assertionEtherDrained.selector;
     }
 
     // Unexpected ether balance

@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/Assertion.sol";
+
+interface IERC4626 {
+    function previewDeposit(uint256 assets) external view returns (uint256);
+
+    function previewWithdraw(uint256 shares) external view returns (uint256);
+
+    function deposit(uint256 assets, address receiver) external returns (uint256);
+
+    function withdraw(uint256 shares, address receiver, address owner) external returns (uint256);
+}
+
+// Make sure that deposit and withdraw are correct
+contract ERC4626DepositWithdrawAssertion is Assertion {
+    IERC4626 public erc4626 = IERC4626(address(0xbeef));
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](2);
+        assertions[0] = this.assertionDeposit.selector;
+        assertions[1] = this.assertionWithdraw.selector;
+    }
+
+    // Make sure that the preview deposit is correct
+    // return true indicates a valid state
+    // return false indicates an invalid state
+    function assertionDeposit() external returns (bool) {
+        ph.forkPreState();
+        // Get the sender of the transaction and the calldata
+        (address from, , bytes memory data) = ph.getTransaction(); // TODO: Check if this works once we have the cheatcode
+        bytes4 functionSelector = bytes4(data[:4]);
+        if (functionSelector != erc4626.deposit.selector) {
+            return true; // Skip the assertion if the function is not deposit
+        }
+        (uint256 assets, address receiver) = abi.decode(data[4:], (uint256, address));
+        uint256 expectedShares = erc4626.previewDeposit(assets);
+        uint256 preBalance = erc4626.balanceOf(receiver);
+        ph.forkPostState();
+        uint256 postBalance = erc4626.balanceOf(receiver);
+        return postBalance == preBalance + expectedShares;
+    }
+
+    // Make sure that the preview withdraw is correct
+    // return true indicates a valid state
+    // return false indicates an invalid state
+    function assertionWithdraw() external returns (bool) {
+        ph.forkPreState();
+        // Get the sender of the transaction and the calldata
+        (address from, , bytes memory data) = ph.getTransaction(); // TODO: Check if this works once we have the cheatcode
+        bytes4 functionSelector = bytes4(data[:4]);
+        if (functionSelector != erc4626.withdraw.selector) {
+            return true; // Skip the assertion if the function is not withdraw
+        }
+        (uint256 shares, address receiver, address owner) = abi.decode(data[4:], (uint256, address, address));
+        uint256 expectedAssets = erc4626.previewWithdraw(shares);
+        uint256 preBalance = erc4626.balanceOf(receiver);
+        ph.forkPostState();
+        uint256 postBalance = erc4626.balanceOf(receiver);
+        return postBalance == preBalance - expectedAssets;
+    }
+}

@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/Assertion.sol";
+
+interface IGovernance {
+    struct Timelock {
+        address admin;
+        uint256 timelockDelay;
+        bool isActive;
+    }
+
+    function timelock() external view returns (Timelock memory);
+}
+
+// Verify that a timelock is working as expected after some governance action
+contract TimelockVerification is Assertion {
+    IGovernance governance = IGovernance(address(0xbeef));
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1);
+        assertions[0] = this.assertionTimelock.selector;
+    }
+
+    // This assertion checks that if a timelock is activated that it's within the correct parameters
+    // and that the admin is the same as the pre-state admin
+    // return true indicates a valid state
+    // return false indicates an invalid state
+    function assertionTimelock() external returns (bool) {
+        address preAdmin = governance.timelock().admin;
+        ph.forkPreState();
+        if (governance.timelock().isActive) {
+            return true; // Timelock is already active prior to the transaction, so we don't need to check anything
+        }
+
+        ph.forkPostState();
+
+        if (governance.timelock().isActive) {
+            bool minDelayCorrect = governance.timelock().timelockDelay >= 1 days; // Choose whatever fits your protocol
+            bool maxDelayCorrect = governance.timelock().timelockDelay <= 2 weeks; // Choose whatever fits your protocol
+            bool adminCorrect = governance.timelock().admin == preAdmin;
+            return minDelayCorrect && maxDelayCorrect && adminCorrect;
+        } else {
+            return true; // Timelock is not active after the transaction, so there's nothing to check
+        }
+    }
+}

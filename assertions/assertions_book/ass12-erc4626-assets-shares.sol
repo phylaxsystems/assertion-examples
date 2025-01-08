@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/Assertion.sol";
+
+interface IERC4626 {
+    function totalAssets() external view returns (uint256);
+
+    function totalShares() external view returns (uint256);
+
+    function convertToShares(uint256 assets) external view returns (uint256);
+}
+
+// TODO: Explain the assertion
+contract ERC4626AssetsSharesAssertion is Assertion {
+    IERC4626 public erc4626 = IERC4626(address(0xbeef));
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1);
+        assertions[0] = this.assertionAssetsShares.selector;
+    }
+
+    // Make sure that the total shares are not more than the total assets
+    // return true indicates a valid state
+    // return false indicates an invalid state
+    function assertionAssetsShares() external returns (bool) {
+        ph.forkPostState();
+        uint256 totalAssets = erc4626.totalAssets();
+        uint256 totalShares = erc4626.totalShares();
+        uint256 totalAssetsInShares = erc4626.convertToShares(totalAssets);
+        return totalShares == 0 || totalAssetsInShares <= totalShares; // edge case: total shares is 0
+    }
+}

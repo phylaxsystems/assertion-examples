@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/Assertion.sol";
+
+interface IPool {
+    function price() external view returns (uint256);
+
+    function twap() external view returns (uint256);
+}
+
+// Checks that the pool price doesn't deviate more than 5% from the twap
+contract TwapDeviationAssertion is Assertion {
+    IPool public pool = IPool(address(0xbeef));
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1);
+        assertions[0] = this.assertionTwapDeviation.selector;
+    }
+
+    // Make sure that the price doesn't deviate more than 5% from the twap
+    // return true indicates a valid state
+    // return false indicates an invalid state
+    function assertionTwapDeviation() external returns (bool) {
+        ph.forkPostState();
+        uint256 currentPrice = pool.price();
+        uint256 twapPrice = pool.twap();
+        uint256 maxDeviation = 5; // 5% deviation, define this according to your protocol
+        uint256 deviation = (((currentPrice > twapPrice) ? currentPrice - twapPrice : twapPrice - currentPrice) * 100) /
+            twapPrice;
+        return deviation <= maxDeviation;
+    }
+}

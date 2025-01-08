@@ -1,23 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Voter} from "lib/Voter.sol";
 import {Assertion} from "lib/credible-std/Assertion.sol";
 
-abstract contract AerodromeVoterAssertions is Assertion, Voter {
-    Voter public voterContract = Voter(0x16613524e02ad97eDfeF371bC883F2F5d6C480A5); // AeroDrome Voter contract on Base
-    address public emergencyCouncil;
-    address public epochGovernor;
-    address public factoryRegistry;
-    address public forwarder;
+interface IAerodromeVoter {
+    function emergencyCouncil() external view returns (address);
 
-    function fnSelectors() external pure override returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](4);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionEmergencyCouncilChanged.selector);
-        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionEpochGovernorChanged.selector);
-        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionFactoryRegistryChanged.selector);
-        triggers[3] = Trigger(TriggerType.STORAGE, this.assertionForwarderChanged.selector);
-        return triggers;
+    function epochGovernor() external view returns (address);
+
+    function factoryRegistry() external view returns (address);
+
+    function forwarder() external view returns (address);
+}
+
+contract AerodromeVoterAssertions is Assertion {
+    IAerodromeVoter public voterContract = IAerodromeVoter(0x16613524e02ad97eDfeF371bC883F2F5d6C480A5); // AeroDrome Voter contract on Base
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](4);
+        assertions[0] = this.assertionEmergencyCouncilChanged.selector;
+        assertions[1] = this.assertionEpochGovernorChanged.selector;
+        assertions[2] = this.assertionFactoryRegistryChanged.selector;
+        assertions[3] = this.assertionForwarderChanged.selector;
     }
 
     function assertionEmergencyCouncilChanged() external returns (bool) {
