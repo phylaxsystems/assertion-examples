@@ -18,13 +18,11 @@ contract TokensBorrowedInvariant is Assertion {
         assertions[0] = this.assertionBorrowedInvariant.selector;
     }
 
-    // Check that the total supply of assets is greater than or equal to the total borrowed assets
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionBorrowedInvariant() external returns (bool) {
+    // Check that the invariant that the total supply of assets is greater than or equal to the total borrowed assets is maintained
+    function assertionBorrowedInvariant() external {
         ph.forkPostState();
         uint256 totalSupplyAsset = morpho.totalSupplyAsset();
         uint256 totalBorrowedAsset = morpho.totalBorrowedAsset();
-        return totalSupplyAsset >= totalBorrowedAsset;
+        require(totalSupplyAsset >= totalBorrowedAsset, "Total supply of assets is less than total borrowed assets");
     }
 }

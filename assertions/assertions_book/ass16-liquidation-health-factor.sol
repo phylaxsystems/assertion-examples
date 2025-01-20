@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/Assertion.sol";
+
+// Using Morpho as an example, but this could be any lending protocol
+interface IMorpho {
+    struct MarketParams {
+        Id id;
+    }
+
+    struct Id {
+        uint256 marketId;
+    }
+
+    function liquidate(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 seizedAssets,
+        uint256 repaidShares,
+        bytes memory data
+    ) external returns (uint256, uint256);
+
+    function isHealthy(MarketParams memory marketParams, address borrower) external view returns (bool);
+    function healthFactor(MarketParams memory marketParams, address borrower) external view returns (uint256);
+}
+
+contract MorphoHealthFactorAssertion is Assertion {
+    IMorpho public morpho = IMorpho(address(0xbeef));
+
+    // Morpho's health factor is scaled by 1e18
+    uint256 constant LIQUIDATION_THRESHOLD = 1e18; // 1.0
+    uint256 constant MIN_HEALTH_FACTOR = 1.02e18; // 1.02 - small buffer above liquidation
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1);
+        assertions[0] = this.assertHealthFactor.selector;
+    }
+
+    // Make sure that liquidation can't happen if the position is healthy
+    // Check that the health factor is improved after liquidation
+    function assertHealthFactor() external {
+        // Get transaction data to identify borrower
+        (,,, bytes memory data) = ph.getTransaction(); // TODO: Update once cheatcode is implemented
+        bytes4 selector = bytes4(data[:4]);
+
+        // Decode based on function type
+        address borrower;
+        IMorpho.MarketParams memory marketParams;
+
+        if (selector == IMorpho.liquidate.selector) {
+            // Decode liquidation parameters
+            (marketParams, borrower,,,) = abi.decode(data[4:], (IMorpho.MarketParams, address, uint256, uint256, bytes));
+        } else {
+            // For other operations (borrow, withdraw, etc.) let the assertion pass
+            return;
+        }
+
+        // Check health factor before
+        ph.forkPreState();
+        uint256 preHealthFactor = morpho.healthFactor(marketParams, borrower);
+        require(preHealthFactor <= LIQUIDATION_THRESHOLD, "Account not eligible for liquidation");
+
+        // Check health factor after
+        ph.forkPostState();
+        uint256 postHealthFactor = morpho.healthFactor(marketParams, borrower);
+
+        // Verify improvements
+        require(postHealthFactor > preHealthFactor, "Health factor did not improve after liquidation");
+
+        require(postHealthFactor >= MIN_HEALTH_FACTOR, "Health factor still too low after liquidation");
+    }
+}

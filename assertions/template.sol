@@ -15,25 +15,24 @@ contract ExampleAssertion is Assertion {
     function fnSelectors() external pure override returns (bytes4[] memory assertions) {
         assertions = new bytes4[](1); // Define the number of triggers
         assertions[0] = this.assertionExample.selector; // Define the trigger
-        // assertions[1] = this.assertionAnotherExample.selector; // Example of another assertion
+            // assertions[1] = this.assertionAnotherExample.selector; // Example of another assertion
     }
 
     // TODO: Describe the assertion
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionExample() external returns (bool) {
+    // revert if the assertion fails
+    function assertionExample() external {
         ph.forkPreState();
         address preOwner = example.owner();
         ph.forkPostState();
         address postOwner = example.owner();
-        return preOwner == postOwner;
+        require(preOwner == postOwner, "Owner is not the same before and after the transaction");
     }
 
-    // function assertionAnotherExample() external returns (bool) {
+    // function assertionAnotherExample() external {
     //     ph.forkPreState();
     //     address preOwner = example.admin();
     //     ph.forkPostState();
     //     address postOwner = example.admin();
-    //     return preOwner == postOwner;
+    //     require(preOwner == postOwner, "Owner is not the same before and after the transaction");
     // }
 }

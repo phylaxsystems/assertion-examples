@@ -33,14 +33,14 @@ abstract contract ERC20Assertions is Assertion {
     }
 
     // Balance vulnerability
-    // Don't allow balance to be reduced by more than 90%
-    function assertionBalanceReduced90() external returns (bool) {
+    // Don't allow balance to be reduced by more than 10%
+    function assertionBalanceReduced10() external returns (bool) {
         ph.forkPreState();
         uint256 previousBalance = erc20.balanceOf(smartContract);
         ph.forkPostState();
         uint256 newBalance = erc20.balanceOf(smartContract);
         uint256 tenPercent = previousBalance / 10;
-        return newBalance >= tenPercent;
+        return newBalance >= previousBalance - tenPercent;
     }
 
     // Approval vulnerability

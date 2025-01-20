@@ -21,13 +21,12 @@ contract ERC4626AssetsSharesAssertion is Assertion {
     }
 
     // Make sure that the total shares are not more than the total assets
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionAssetsShares() external returns (bool) {
+    // revert if total shares is greater than total assets
+    function assertionAssetsShares() external {
         ph.forkPostState();
         uint256 totalAssets = erc4626.totalAssets();
         uint256 totalShares = erc4626.totalShares();
         uint256 totalAssetsInShares = erc4626.convertToShares(totalAssets);
-        return totalShares == 0 || totalAssetsInShares <= totalShares; // edge case: total shares is 0
+        require(totalShares == 0 || totalAssetsInShares >= totalShares, "Total shares is greater than total assets"); // edge case: total shares is 0
     }
 }

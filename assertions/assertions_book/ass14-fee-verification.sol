@@ -2,34 +2,41 @@
 pragma solidity 0.8.28;
 
 // TODO: Import the contract / interface you want to assert
-import {IAmm} from "../../lib/Amm.sol";
 import {Assertion} from "../../lib/credible-std/Assertion.sol";
 
-// TODO: Explain the assertion
-contract AmmFeeVerificationAssertion is Assertion, IAmm {
-    IAmm public amm = IAmm(0xbeef);
+// Aerodrome style interface
+interface IPool {
+    function fee() external view returns (uint256);
+    function stable() external view returns (bool);
+}
+
+// Check that fee invariants are maintained
+contract AmmFeeVerificationAssertion is Assertion {
+    IPool public pool = IPool(address(0xbeef));
 
     function fnSelectors() external pure override returns (bytes4[] memory assertions) {
         assertions = new bytes4[](1);
         assertions[0] = this.feeVerification.selector;
     }
 
-    // TODO: Describe the assertion
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function feeVerification() external returns (bool) {
+    // Check that the fee is the same before and after the transaction
+    // and that they maintain correct percentage based on stable or not
+    // revert if the fee is not the same before and after the transaction
+    function feeVerification() external {
         ph.forkPreState();
-        uint256 preFee = amm.fee();
+        uint256 preFee = pool.fee();
+        bool preStable = pool.stable(); // check pool is stable or not
         ph.forkPostState();
-        uint256 postFee = amm.fee();
-        return preFee == postFee;
+        uint256 postFee = pool.fee();
+        bool postStable = pool.stable(); // check pool is stable or not
+        // Fee should be the same before and after the transaction
+        require(preFee == postFee, "Fee is not the same before and after the transaction");
+        // Pool should be stable before and after the transaction
+        require(preStable == postStable, "Pool is not stable before and after the transaction");
+        if (postStable) {
+            require(postFee == 1, "Fee is not 0.1% for stable pool"); // Should be what the protocol defines
+        } else {
+            require(postFee == 25, "Fee is not 0.25% for non-stable pool"); // Should be what the protocol defines
+        }
     }
-
-    // function assertionAnotherExample() external returns (bool) {
-    //     ph.forkPreState();
-    //     address preOwner = example.admin();
-    //     ph.forkPostState();
-    //     address postOwner = example.admin();
-    //     return preOwner == postOwner;
-    // }
 }
