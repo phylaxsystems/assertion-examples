@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
 // We use Morpho as an example, but this could be any lending protocol
 interface IMorpho {
     struct MarketParams {
         Id id;
     }
+
     struct Id {
         uint256 marketId;
     }
 
-    function _isHealthy(MarketParams memory marketParams, Id memory id, address borrower) external view returns (bool);
+    function _isHealthy(MarketParams memory marketParams, Id memory id, address borrower)
+        external
+        view
+        returns (bool);
 }
 
 contract LendingHealthFactorAssertion is Assertion {
@@ -32,17 +36,15 @@ contract LendingHealthFactorAssertion is Assertion {
     // return false indicates an invalid state
     function assertionHealthFactor() external returns (bool) {
         ph.forkPostState();
-        (, , , bytes memory data) = ph.getTransaction(); // TODO: Check if this works once we have the cheatcode
+        (,,, bytes memory data) = ph.getTransaction(); // TODO: Check if this works once we have the cheatcode
         bytes4 functionSelector = bytes4(data[:4]);
         if (functionSelector != morpho.withdrawCollateral.selector) {
             return true; // Skip the assertion if the function is not withdrawCollateral
         }
 
         // Skip the first 4 bytes (function selector) by passing the full calldata to decode
-        (IMorpho.MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) = abi.decode(
-            data[4:],
-            (IMorpho.MarketParams, uint256, address, address)
-        );
+        (IMorpho.MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) =
+            abi.decode(data[4:], (IMorpho.MarketParams, uint256, address, address));
 
         return morpho._isHealthy(marketParams, marketParams.id, onBehalf);
     }
