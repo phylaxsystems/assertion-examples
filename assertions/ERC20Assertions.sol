@@ -1,24 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Assertion} from "../lib/credible-std/Assertion.sol";
 
-abstract contract ERC20Assertions is Assertion, ERC20 {
-    ERC20 public erc20 = ERC20(0x0000000000000000000000000000000000000000);
+interface IERC20 {
+    function balanceOf(address account) external view returns (uint256);
+
+    function allowance(address owner, address spender) external view returns (uint256);
+}
+
+abstract contract ERC20Assertions is Assertion {
+    IERC20 public erc20 = IERC20(0x0000000000000000000000000000000000000000);
     address public smartContract = address(0x0000000000000000000000000000000000000000);
     address public someExternalContract = address(0x0000000000000000000000000000000000000000);
     address[] public allowedAddresses = [address(0x1), address(0x2), address(0x3)];
 
-    function fnSelectors() external pure override returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](6);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionBalanceDrained.selector);
-        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionBalanceReduced90.selector);
-        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionFullAllowance.selector);
-        triggers[3] = Trigger(TriggerType.STORAGE, this.assertionAllowanceReduced90.selector);
-        triggers[4] = Trigger(TriggerType.STORAGE, this.assertionMaxAllowance.selector);
-        triggers[5] = Trigger(TriggerType.STORAGE, this.assertionOnlyAllowedAddressesHaveAllowance.selector);
-        return triggers;
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](6);
+        assertions[0] = this.assertionBalanceDrained.selector;
+        assertions[1] = this.assertionBalanceReduced90.selector;
+        assertions[2] = this.assertionFullAllowance.selector;
+        assertions[3] = this.assertionAllowanceReduced90.selector;
+        assertions[4] = this.assertionMaxAllowance.selector;
+        assertions[5] = this.assertionOnlyAllowedAddressesHaveAllowance.selector;
     }
 
     // Balance vulnerability
@@ -29,14 +33,14 @@ abstract contract ERC20Assertions is Assertion, ERC20 {
     }
 
     // Balance vulnerability
-    // Don't allow balance to be reduced by more than 90%
-    function assertionBalanceReduced90() external returns (bool) {
+    // Don't allow balance to be reduced by more than 10%
+    function assertionBalanceReduced10() external returns (bool) {
         ph.forkPreState();
         uint256 previousBalance = erc20.balanceOf(smartContract);
         ph.forkPostState();
         uint256 newBalance = erc20.balanceOf(smartContract);
         uint256 tenPercent = previousBalance / 10;
-        return newBalance >= tenPercent;
+        return newBalance >= previousBalance - tenPercent;
     }
 
     // Approval vulnerability

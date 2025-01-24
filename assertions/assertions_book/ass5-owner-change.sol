@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+
+interface IOwnership {
+    function owner() external view returns (address);
+
+    function admin() external view returns (address);
+}
+
+// This is a simple example of an assertion that checks if the owner has changed.
+// You can import your own ownership contract and modify the assertion accordingly.
+contract OwnerChange is Assertion {
+    IOwnership public ownership = IOwnership(address(0xbeef));
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](2);
+        assertions[0] = this.assertionOwnerChange.selector;
+        assertions[1] = this.assertionAdminChange.selector;
+    }
+
+    // This function is used to check if the owner has changed.
+    function assertionOwnerChange() external {
+        ph.forkPreState(); // fork the pre state - the state before the transaction
+        address preOwner = ownership.owner(); // get the owner before the transaction
+        ph.forkPostState(); // fork the post state - the state after the transaction
+        address postOwner = ownership.owner(); // get the owner after the transaction
+        require(preOwner == postOwner, "Owner has changed");
+    }
+
+    // This function is used to check if the admin has changed.
+    // It works in the same way as the ownerChange function, and here it's used as
+    // an example of how to add another trigger to the assertion.
+    function assertionAdminChange() external {
+        ph.forkPreState(); // fork the pre state - the state before the transaction
+        address preAdmin = ownership.admin(); // get the admin before the transaction
+        ph.forkPostState(); // fork the post state - the state after the transaction
+        address postAdmin = ownership.admin(); // get the admin after the transaction
+        require(preAdmin == postAdmin, "Admin has changed");
+    }
+}

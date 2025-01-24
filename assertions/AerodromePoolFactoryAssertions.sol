@@ -1,21 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {PoolFactory} from "../lib/PoolFactory.sol";
 import {Assertion} from "../lib/credible-std/Assertion.sol";
 
-abstract contract AerodromePoolFactoryAssertions is Assertion {
-    PoolFactory public poolFactory = PoolFactory(0x420DD381b31aEf6683db6B902084cB0FFECe40Da); // AeroDrome PoolFactory on Base
+interface IAerodromePoolFactory {
+    function pauser() external view returns (address);
 
-    function fnSelectors() external pure override returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](6);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionPoolPauserChanged.selector);
-        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionImplementationChanged.selector);
-        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionVoterChanged.selector);
-        triggers[3] = Trigger(TriggerType.STORAGE, this.assertionFeeManagerChanged.selector);
-        triggers[4] = Trigger(TriggerType.STORAGE, this.assertionFeeChanged.selector);
-        triggers[5] = Trigger(TriggerType.STORAGE, this.assertionMaxFeeChanged.selector);
-        return triggers;
+    function implementation() external view returns (address);
+
+    function voter() external view returns (address);
+
+    function feeManager() external view returns (address);
+
+    function fee() external view returns (uint256);
+
+    function maxFee() external view returns (uint256);
+}
+
+abstract contract AerodromePoolFactoryAssertions is Assertion {
+    IAerodromePoolFactory public poolFactory = IAerodromePoolFactory(0x420DD381b31aEf6683db6B902084cB0FFECe40Da); // AeroDrome PoolFactory on Base
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](6);
+        assertions[0] = this.assertionPoolPauserChanged.selector;
+        assertions[1] = this.assertionImplementationChanged.selector;
+        assertions[2] = this.assertionVoterChanged.selector;
+        assertions[3] = this.assertionFeeManagerChanged.selector;
+        assertions[4] = this.assertionFeeChanged.selector;
+        assertions[5] = this.assertionMaxFeeChanged.selector;
     }
 
     function assertionPoolPauserChanged() external returns (bool) {

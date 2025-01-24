@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+
+interface IMorpho {
+    function totalSupplyAsset() external view returns (uint256);
+
+    function totalBorrowedAsset() external view returns (uint256);
+}
+
+// Assert that the total supply of assets is greater than or equal to the total borrowed assets
+contract TokensBorrowedInvariant is Assertion {
+    IMorpho public morpho = IMorpho(address(0xbeef));
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1);
+        assertions[0] = this.assertionBorrowedInvariant.selector;
+    }
+
+    // Check that the invariant that the total supply of assets is greater than or equal to the total borrowed assets is maintained
+    function assertionBorrowedInvariant() external {
+        ph.forkPostState();
+        uint256 totalSupplyAsset = morpho.totalSupplyAsset();
+        uint256 totalBorrowedAsset = morpho.totalBorrowedAsset();
+        require(totalSupplyAsset >= totalBorrowedAsset, "Total supply of assets is less than total borrowed assets");
+    }
+}

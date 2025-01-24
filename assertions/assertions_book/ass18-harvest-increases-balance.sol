@@ -1,0 +1,47 @@
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
+
+interface IBeefyVault {
+    function balance() external view returns (uint256);
+    function getPricePerFullShare() external view returns (uint256);
+    function harvest() external;
+}
+
+// Assert that the balance of the vault increases after a harvest
+// Inspired by // https://github.com/beefyfinance/beefy-contracts/blob/master/forge/test/vault/ChainVaultsTest.t.sol#L77-L110
+contract BeefyHarvestAssertion is Assertion {
+    IBeefyVault public vault = IBeefyVault(address(0xbeef));
+
+    bytes4 constant HARVEST = IBeefyVault.harvest.selector;
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1); // Define the number of triggers
+        assertions[0] = this.assertionHarvestIncreasesBalance.selector; // Define the trigger
+    }
+
+    // Assert that the balance of the vault increases after a harvest and that the price per share increases or stays the same
+    function assertionHarvestIncreasesBalance() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(vault), vault.harvest.selector);
+        if (callInputs.length == 0) {
+            return;
+        }
+
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            ph.forkPreState();
+            uint256 preBalance = vault.balance();
+            uint256 prePricePerShare = vault.getPricePerFullShare();
+
+            ph.forkPostState();
+            uint256 postBalance = vault.balance();
+            uint256 postPricePerShare = vault.getPricePerFullShare();
+
+            // Balance should increase after harvest
+            require(postBalance > preBalance, "Harvest did not increase balance");
+
+            // Price per share should increase or stay the same
+            require(postPricePerShare >= prePricePerShare, "Price per share decreased after harvest");
+        }
+    }
+}

@@ -1,18 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Baal} from "lib/Baal.sol";
 import {Assertion} from "lib/credible-std/Assertion.sol";
 
-abstract contract BaalMolochv3Assertions is Assertion, Baal {
-    Baal public baal = Baal(0x0000000000000000000000000000000000000000);
+interface IBaalMolochv3 {
+    function owner() external view returns (address);
 
-    function fnSelectors() external pure override returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](3);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionOwnerChanged.selector);
-        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionSponsorshipThresholdNotZero.selector);
-        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionTrustedForwarderNotZero.selector);
-        return triggers;
+    function sponsorshipThreshold() external view returns (uint256);
+
+    function trustedForwarder() external view returns (address);
+}
+
+abstract contract BaalMolochv3Assertions is Assertion {
+    IBaalMolochv3 public baal = IBaalMolochv3(0x0000000000000000000000000000000000000000);
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](3);
+        assertions[0] = this.assertionOwnerChanged.selector;
+        assertions[1] = this.assertionSponsorshipThresholdNotZero.selector;
+        assertions[2] = this.assertionTrustedForwarderNotZero.selector;
     }
 
     function assertionOwnerChanged() external returns (bool) {

@@ -1,20 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Safe} from "../lib/Safe.sol";
 import {Assertion} from "../lib/credible-std/Assertion.sol";
 
-contract SafeProxyAssertions is Assertion, Safe {
-    Safe public safe;
+interface ISafe {
+    function getThreshold() external view returns (uint256);
 
-    function fnSelectors() external pure override returns (Trigger[] memory) {
-        Trigger[] memory triggers = new Trigger[](5);
-        triggers[0] = Trigger(TriggerType.STORAGE, this.assertionValidThreshold.selector);
-        triggers[1] = Trigger(TriggerType.STORAGE, this.assertionThresholdNotOne.selector);
-        triggers[2] = Trigger(TriggerType.STORAGE, this.assertionInvariantNonce.selector);
-        triggers[3] = Trigger(TriggerType.STORAGE, this.assertionNoDuplicateOwners.selector);
-        triggers[4] = Trigger(TriggerType.STORAGE, this.assertionChainIdNeverChanges.selector);
-        return triggers;
+    function getOwners() external view returns (address[] memory);
+
+    function nonce() external view returns (uint256);
+
+    function getChainId() external view returns (uint256);
+}
+
+contract SafeProxyAssertions is Assertion {
+    ISafe public safe;
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](5);
+        assertions[0] = this.assertionValidThreshold.selector;
+        assertions[1] = this.assertionThresholdNotOne.selector;
+        assertions[2] = this.assertionInvariantNonce.selector;
+        assertions[3] = this.assertionNoDuplicateOwners.selector;
+        assertions[4] = this.assertionChainIdNeverChanges.selector;
     }
 
     // The threshold should always be greater than zero and less than or equal to the number of owners
@@ -28,8 +36,9 @@ contract SafeProxyAssertions is Assertion, Safe {
     // The threshold should never be set to one if threshold was previously greater than one
     function assertionThresholdNotOne() external returns (bool) {
         ph.forkPreState();
-        uint256 newThreshold = safe.getThreshold();
+        uint256 previousThreshold = safe.getThreshold();
         ph.forkPostState();
+        uint256 newThreshold = safe.getThreshold();
         if (previousThreshold > 1) {
             return newThreshold > 1;
         }

@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
+
+// Using Morpho as an example, but this could be any lending protocol
+interface IMorpho {
+    struct MarketParams {
+        Id id;
+    }
+
+    struct Id {
+        uint256 marketId;
+    }
+
+    function liquidate(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 seizedAssets,
+        uint256 repaidShares,
+        bytes memory data
+    ) external returns (uint256, uint256);
+
+    function isHealthy(MarketParams memory marketParams, address borrower) external view returns (bool);
+    function healthFactor(MarketParams memory marketParams, address borrower) external view returns (uint256);
+}
+
+contract MorphoHealthFactorAssertion is Assertion {
+    IMorpho public morpho = IMorpho(address(0xbeef));
+
+    // Morpho's health factor is scaled by 1e18
+    uint256 constant LIQUIDATION_THRESHOLD = 1e18; // 1.0
+    uint256 constant MIN_HEALTH_FACTOR = 1.02e18; // 1.02 - small buffer above liquidation
+
+    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
+        assertions = new bytes4[](1);
+        assertions[0] = this.assertHealthFactor.selector;
+    }
+
+    // Make sure that liquidation can't happen if the position is healthy
+    // Check that the health factor is improved after liquidation
+    function assertHealthFactor() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(morpho), morpho.liquidate.selector);
+        if (callInputs.length == 0) {
+            return;
+        }
+
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            bytes memory data = callInputs[i].input;
+            address borrower;
+            IMorpho.MarketParams memory marketParams;
+
+            (marketParams, borrower,,,) =
+                abi.decode(stripSelector(data), (IMorpho.MarketParams, address, uint256, uint256, bytes));
+
+            // Check health factor before
+            ph.forkPreState();
+            uint256 preHealthFactor = morpho.healthFactor(marketParams, borrower);
+            require(preHealthFactor <= LIQUIDATION_THRESHOLD, "Account not eligible for liquidation");
+
+            // Check health factor after
+            ph.forkPostState();
+            uint256 postHealthFactor = morpho.healthFactor(marketParams, borrower);
+
+            require(postHealthFactor > preHealthFactor, "Health factor did not improve after liquidation");
+
+            require(postHealthFactor >= MIN_HEALTH_FACTOR, "Health factor still too low after liquidation");
+        }
+    }
+
+    function stripSelector(bytes memory input) internal pure returns (bytes memory) {
+        // Create a new bytes memory and copy everything after the selector
+        bytes memory paramData = new bytes(32);
+        for (uint256 i = 4; i < input.length; i++) {
+            paramData[i - 4] = input[i];
+        }
+        return paramData;
+    }
+}
