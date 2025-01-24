@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
 interface IOwnership {
     function owner() external view returns (address);
@@ -21,24 +21,22 @@ contract OwnerChange is Assertion {
     }
 
     // This function is used to check if the owner has changed.
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionOwnerChange() external returns (bool) {
+    function assertionOwnerChange() external {
         ph.forkPreState(); // fork the pre state - the state before the transaction
         address preOwner = ownership.owner(); // get the owner before the transaction
         ph.forkPostState(); // fork the post state - the state after the transaction
         address postOwner = ownership.owner(); // get the owner after the transaction
-        return preOwner == postOwner; // return false if the owner has changed (invalid state)
+        require(preOwner == postOwner, "Owner has changed");
     }
 
     // This function is used to check if the admin has changed.
     // It works in the same way as the ownerChange function, and here it's used as
     // an example of how to add another trigger to the assertion.
-    function assertionAdminChange() external virtual returns (bool) {
+    function assertionAdminChange() external {
         ph.forkPreState(); // fork the pre state - the state before the transaction
         address preAdmin = ownership.admin(); // get the admin before the transaction
         ph.forkPostState(); // fork the post state - the state after the transaction
         address postAdmin = ownership.admin(); // get the admin after the transaction
-        return preAdmin == postAdmin; // return false if the admin has changed (invalid state)
+        require(preAdmin == postAdmin, "Admin has changed");
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
 interface IImplementation {
     function implementation() external view returns (address);
@@ -17,11 +17,11 @@ contract ImplementationChange is Assertion {
 
     // Asssert that the implementation contract address doesn't change
     // during the state transition
-    function implementationChange() external returns (bool) {
+    function implementationChange() external {
         ph.forkPreState();
         address preImpl = implementation.implementation();
         ph.forkPostState();
         address postImpl = implementation.implementation();
-        return preImpl == postImpl;
+        require(preImpl == postImpl, "Implementation has changed");
     }
 }

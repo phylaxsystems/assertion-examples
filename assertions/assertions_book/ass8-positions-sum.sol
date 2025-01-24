@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+
+// !!! This assertion is not working currently, as the pre-compile needed is not yet implemented
 
 // We use Morpho as an example, but this could be any lending protocol
 interface IMorpho {
@@ -18,15 +20,13 @@ contract PositionSumAssertion is Assertion {
     }
 
     // Compare the sum of all positions to the total supply reported by the protocol
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionPositionsSum() external returns (bool) {
+    function assertionPositionsSum() external {
         ph.forkPostState();
         uint256[] memory assets = ph.iterator().assets; // TODO: Assuming there is a cheatcode that allows to iterate
         uint256 allSupplyPositionsSum = 0;
         for (uint256 i = 0; i < assets.length; i++) {
             allSupplyPositionsSum += assets[i];
         }
-        return allSupplyPositionsSum == morpho.totalSupply();
+        require(allSupplyPositionsSum == morpho.totalSupply(), "Positions sum does not match total supply");
     }
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-// TODO: Import the contract / interface you want to assert
-import {Assertion} from "../lib/credible-std/Assertion.sol";
+import {Assertion} from "../lib/credible-std/src/Assertion.sol";
+import {PhEvm} from "../lib/credible-std/src/PhEvm.sol";
 
 interface IVestraDAO {
     struct Stake {
@@ -32,15 +32,26 @@ contract VestraDAOHack is Assertion {
     // Check if the user has already unstaked for a maturity
     // return true indicates a valid state
     // return false indicates an invalid state
-    function assertionExample() external returns (bool) {
-        ph.forkPostState();
-        (address from, , , bytes memory data) = ph.getTransaction(); // TODO: Check if this works once we have the cheatcode
-        bytes4 functionSelector = bytes4(data[:4]);
-        if (functionSelector != vestraDAO.unStake.selector) {
-            return true; // Skip the assertion if the function is not withdrawCollateral
+    function assertionExample() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(vestraDAO), vestraDAO.unStake.selector);
+        if (callInputs.length == 0) {
+            return;
         }
-        uint8 maturity = abi.decode(data[4:], (uint8));
-        IVestraDAO.Stake storage user = vestraDAO.stakes[from][maturity];
-        return user.isActive;
+
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            bytes memory data = callInputs[i].input;
+            address from = callInputs[i].caller;
+            uint8 maturity = abi.decode(stripSelector(data), (uint8));
+            IVestraDAO.Stake storage user = vestraDAO.stakes[from][maturity];
+            require(!user.isActive, "User has already unstaked");
+        }
+    }
+
+    function stripSelector(bytes memory input) internal pure returns (bytes memory) {
+        bytes memory paramData = new bytes(32);
+        for (uint256 i = 4; i < input.length; i++) {
+            paramData[i - 4] = input[i];
+        }
+        return paramData;
     }
 }

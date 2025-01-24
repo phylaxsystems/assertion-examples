@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
 interface IOracle {
     function lastUpdated() external view returns (uint256);
@@ -20,25 +20,21 @@ contract OracleLivenessAssertion is Assertion {
     }
 
     // Make sure that the oracle has been updated within the last 10 minutes
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionOracleLiveness() external returns (bool) {
+    function assertionOracleLiveness() external {
         ph.forkPreState();
         uint256 preTimestamp = oracle.lastUpdated();
         ph.forkPostState();
         uint256 postTimestamp = oracle.lastUpdated();
-        return postTimestamp - preTimestamp <= 10 minutes; // Could be whatever time frame your protocol requires
+        require(postTimestamp - preTimestamp <= 10 minutes, "Oracle not updated within the last 10 minutes");
     }
 
     // Make sure that price doesn't deviate more than 10%
-    // return true indicates a valid state
-    // return false indicates an invalid state
-    function assertionOraclePrice() external returns (bool) {
+    function assertionOraclePrice() external {
         ph.forkPreState();
         uint256 prePrice = oracle.price();
         ph.forkPostState();
         uint256 postPrice = oracle.price();
         uint256 deviation = (((postPrice > prePrice) ? postPrice - prePrice : prePrice - postPrice) * 100) / prePrice;
-        return deviation <= 10; // Could be whatever deviation your protocol requires
+        require(deviation <= 10, "Price deviation is too large");
     }
 }

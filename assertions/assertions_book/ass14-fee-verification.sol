@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-// TODO: Import the contract / interface you want to assert
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
 // Aerodrome style interface
 interface IPool {

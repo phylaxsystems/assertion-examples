@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../../lib/credible-std/Assertion.sol";
+import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
 
 interface IYieldFarm {
     function withdraw(uint256 amount) external;
@@ -20,21 +21,35 @@ contract YieldFarmWithdrawAssertion is Assertion {
     // We don't want anyone to be able to withdraw more than they should be able to
     // We're assuming that that rewards are accounted for separately
     function assertWithdraw() external {
-        ph.forkPreState();
-        // Get withdrawal amount from transaction data
-        (address user,,, bytes memory data) = ph.getData(); // TODO: Update when cheatcode is implemented
-        uint256 withdrawAmount = abi.decode(data[4:], (uint256));
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(farm), farm.withdraw.selector);
+        if (callInputs.length == 0) {
+            return;
+        }
 
-        // Get pre-withdrawal state
-        (uint256 preDeposit,) = farm.userInfo(user);
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            bytes memory data = callInputs[i].input;
+            address user = callInputs[i].caller;
+            uint256 withdrawAmount = abi.decode(stripSelector(data), (uint256));
 
-        require(withdrawAmount <= preDeposit, "Withdraw exceeds deposit");
+            // Get pre-withdrawal state
+            (uint256 preDeposit,) = farm.userInfo(user);
 
-        // Check post-withdrawal state
-        ph.forkPostState();
-        (uint256 postDeposit,) = farm.userInfo(user);
+            require(withdrawAmount <= preDeposit, "Withdraw exceeds deposit");
 
-        // Verify deposit amount decreased correctly
-        require(postDeposit == preDeposit - withdrawAmount, "Incorrect withdrawal amount");
+            // Check post-withdrawal state
+            ph.forkPostState();
+            (uint256 postDeposit,) = farm.userInfo(user);
+
+            // Verify deposit amount decreased correctly
+            require(postDeposit == preDeposit - withdrawAmount, "Incorrect withdrawal amount");
+        }
+    }
+
+    function stripSelector(bytes memory input) internal pure returns (bytes memory) {
+        bytes memory paramData = new bytes(32);
+        for (uint256 i = 4; i < input.length; i++) {
+            paramData[i - 4] = input[i];
+        }
+        return paramData;
     }
 }
