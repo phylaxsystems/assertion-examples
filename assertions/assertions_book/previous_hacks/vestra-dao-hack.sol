@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Assertion} from "../lib/credible-std/src/Assertion.sol";
-import {PhEvm} from "../lib/credible-std/src/PhEvm.sol";
+import {Assertion} from "../../../lib/credible-std/src/Assertion.sol";
+import {PhEvm} from "../../../lib/credible-std/src/PhEvm.sol";
 
 interface IVestraDAO {
     struct Stake {
