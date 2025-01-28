@@ -11,7 +11,7 @@ The Euler Finance hack exploited two key protocol features:
 The attack worked by:
 
 1. Creating an over-leveraged position by minting excess tokens
-2. Donating collateral to intentionally make the position under-collateralized 
+2. Donating collateral to intentionally make the position under-collateralized
 3. Self-liquidating the position to take advantage of the 20% liquidation discount
 
 This resulted in the attacker keeping significant "bad debt" while their liquidator account received discounted collateral, profiting from the protocol's liquidation incentives.
@@ -54,6 +54,8 @@ Attack was carried out for several different assets, including DAI, WETH, and US
 ## Proposed Solution
 
 Proper health checks should be performed on the account that is performing the donation.
+It is worth noting that the below assertion checks for modifications made by the user in the transaction.
+The user should never be allowed to make changes to their own collateral or debt that brings their positions under water.
 Assuming we can check run assertions on each call in the transaction and that we can get all modified accounts in the transaction, we can implement the following assertion:
 
 ```solidity
@@ -76,4 +78,4 @@ function assertionNoUnsafeDebt() external {
 }
 ```
 
-This assertion ensures that you don't have more debt than collateral after the transaction.
+This assertion ensures that users don't have more debt than collateral after the transaction.
