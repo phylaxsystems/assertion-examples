@@ -68,14 +68,20 @@ function assertionNoUnsafeDebt() external {
     for (uint256 i = 0; i < accounts.length; i++) {
         address account = accounts[i];
         
-        uint256 collateral = euler.getAccountCollateral(account);
-        uint256 debt = euler.getAccountDebt(account);
-        
         // Core invariant: Collateral must always be >= Debt
-        // (in practice you'd want some buffer, like 125%)
-        require(collateral >= debt, "Account has more debt than collateral");
+        require(euler.healthCheck(account), "Account has more debt than collateral");
     }
 }
 ```
 
 This assertion ensures that users don't have more debt than collateral after the transaction.
+
+## Additional Considerations
+
+The Euler devs forgot to add a health check to the `donateToReserves` function, so why would they have added an assertion for this?
+
+The answer is that they wouldn't. They would have added the assertion way in the beginning when the protocol was deployed first as an additional layer of security.
+They would have done that to exactly prevent what happened. Someone forgot to perform basic invariant checks at a protocol extension, and that's why the assertion acts as an additional layer of security which enforces protocol wide invariants, exactly to prevent insufficient checks in protocol extensions.
+
+In other words, regardless of whether the devs simply forgot to do the checks or if they thought they don't need to do the checks, it shows that extensions are prone to forgetting protocol wide checks.
+Whereas assertions implicitly check protocol wide assertions by default.
