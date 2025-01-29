@@ -28,39 +28,24 @@ In the assertions below, we use the actual Compound distribution rates (0.5 COMP
 If the COMP accrual increase exceeds the maximum possible rate, the assertion will fail.
 
 ```solidity
-// Constants for maximum accrual calculations
-uint256 public constant COMP_PER_BLOCK = 0.5e18; // 0.5 COMP per block
-uint256 public constant MAX_BLOCKS_PER_CALL = 1000; // Max blocks between distributions
-uint256 public constant MAX_MARKET_SHARE = 1e18; // 100% of a market (in 1e18 scale)
 
-// the increase should never exceed COMP_PER_BLOCK * MAX_BLOCKS_PER_CALL.
-uint256 public constant MAX_INCREASE_PER_CALL = COMP_PER_BLOCK * MAX_BLOCKS_PER_CALL; // 500 COMP
-
-// Verify that COMP accrual increases are within reasonable bounds
+// Verify that COMP accrual never exceeds the maximum possible rate
 function assertionValidCompAccrual() external {
-    PhEvm.CallInputs[] memory distributions = ph.getCallInputs(address(compound), DISTRIBUTE_SUPPLIER_COMP);
+    PhEvm.CallInputs[] memory distributions = ph.getCallInputs(address(compound), Comptroller.distributeSupplierComp.selector);
 
     for (uint256 i = 0; i < distributions.length; i++) {
         bytes memory data = distributions[i].input;
-        (address supplier) = abi.decode(stripSelector(data), (address));
+        (address cToken, address supplier) = abi.decode(stripSelector(data), (address, address));
+
 
         // Check COMP accrued before and after distribution
-        ph.forkCallState(distributions[i]);
-        uint256 preAccrued = compound.compAccrued[supplier];
-
-        ph.forkNextCallState(distributions[i]);
-        uint256 postAccrued = compound.compAccrued[supplier];
-
-        if (postAccrued > preAccrued) {
-            uint256 increase = postAccrued - preAccrued;
-
-            // Maximum increase per call = COMP_PER_BLOCK * MAX_BLOCKS_PER_CALL
-            // Uses actual Compound distribution rates (0.5 COMP per block)
-            // Assumes a maximum of 1000 blocks between distributions (~3.3 hours)
-            // Even if a user has 100% of a market, they can't get more than 500 COMP per call
-            // This is a conservative upper bound that would have caught the exploit while allowing legitimate distributions
-            require(increase <= MAX_INCREASE_PER_CALL, "COMP accrual increase exceeds maximum possible rate");
-        }
+        ph.forkPreCallState();
+        CompMarketState storage supplyState = comptroller.compSupplyState[cToken];
+        uint supplyIndex = supplyState.index;
+        uint maxDeltaPerToken = sub_(supplyIndex, comptroller.compInitialIndex);
+        uint supplierTokens = CToken(cToken).balanceOf(supplier);
+        uint maxIncrease = mul_(supplierTokens, deltaIndex);
+        require(increase <= maxIncrease, "COMP accrual increase exceeds maximum possible rate");
     }
 }
 ```
