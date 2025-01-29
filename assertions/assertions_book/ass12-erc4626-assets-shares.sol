@@ -11,7 +11,6 @@ interface IERC4626 {
     function convertToShares(uint256 assets) external view returns (uint256);
 }
 
-// TODO: Explain the assertion
 contract ERC4626AssetsSharesAssertion is Assertion {
     IERC4626 public erc4626 = IERC4626(address(0xbeef));
 

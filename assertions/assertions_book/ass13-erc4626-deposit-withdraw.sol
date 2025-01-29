@@ -21,12 +21,10 @@ contract ERC4626DepositAssertion is Assertion {
     }
 
     // Make sure that the preview deposit is correct
-    // return true indicates a valid state
-    // return false indicates an invalid state
+    // revert if the assertion fails
     function assertionDeposit() external {
         // Get the sender of the transaction and the calldata
-        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(erc4626), erc4626.deposit.selector); // TODO: Check if this works once we have the cheatcode
-        // If there are no call inputs, return
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(erc4626), erc4626.deposit.selector);
         if (callInputs.length == 0) {
             return;
         }
@@ -36,10 +34,11 @@ contract ERC4626DepositAssertion is Assertion {
             (uint256 assets, address receiver) = abi.decode(stripSelector(data), (uint256, address));
             uint256 expectedShares = erc4626.previewDeposit(assets);
             uint256 preTotalAssets = erc4626.totalAssets();
+            uint256 preBalance = erc4626.balanceOf(receiver);
             ph.forkPostState();
             uint256 postBalance = erc4626.balanceOf(receiver);
             uint256 postTotalAssets = erc4626.totalAssets();
-            require(postBalance == expectedShares, "Deposit assertion failed");
+            require(postBalance == expectedShares + preBalance, "Deposit assertion failed");
             require(postTotalAssets == preTotalAssets + assets, "Total assets assertion failed");
         }
     }
