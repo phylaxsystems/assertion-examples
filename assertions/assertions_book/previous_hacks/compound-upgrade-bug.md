@@ -21,14 +21,12 @@ The previous version worked because supplyIndex started at 0 instead of 1e36, th
 
 ## Proposed Solution
 
-It would have made sense for the developers to make sure that the COMP accrual increase is within a reasonable bounds.
-Having an assertions that checks this in place would have caught the exploit.
+It would have made sense for the developers to make sure that the COMPS accrual never exceeds the maximum possible rate.
+This way even if a bug is introduced, it will be caught by the assertion.
 
-In the assertions below, we use the actual Compound distribution rates (0.5 COMP per block) and a maximum of 1000 blocks between distributions (~3.3 hours).
-If the COMP accrual increase exceeds the maximum possible rate, the assertion will fail.
+The assertion below calculates the maximum possible rate of COMP accrual and checks that a distribution does not exceed this rate.
 
 ```solidity
-
 // Verify that COMP accrual never exceeds the maximum possible rate
 function assertionValidCompAccrual() external {
     PhEvm.CallInputs[] memory distributions = ph.getCallInputs(address(compound), Comptroller.distributeSupplierComp.selector);
@@ -37,15 +35,22 @@ function assertionValidCompAccrual() external {
         bytes memory data = distributions[i].input;
         (address cToken, address supplier) = abi.decode(stripSelector(data), (address, address));
 
-
         // Check COMP accrued before and after distribution
         ph.forkPreCallState();
+        uint256 preAccrued = compound.compAccrued[supplier];
         CompMarketState storage supplyState = comptroller.compSupplyState[cToken];
         uint supplyIndex = supplyState.index;
         uint maxDeltaPerToken = sub_(supplyIndex, comptroller.compInitialIndex);
         uint supplierTokens = CToken(cToken).balanceOf(supplier);
-        uint maxIncrease = mul_(supplierTokens, deltaIndex);
-        require(increase <= maxIncrease, "COMP accrual increase exceeds maximum possible rate");
+        uint maxIncrease = mul_(supplierTokens, maxDeltaPerToken);
+
+        ph.forkPostCallState();
+        uint256 postAccrued = compound.compAccrued[supplier];
+
+        if (postAccrued > preAccrued) {
+            uint256 increase = postAccrued - preAccrued;
+            require(increase <= maxIncrease, "COMP accrual increase exceeds maximum possible rate");
+        }
     }
 }
 ```
