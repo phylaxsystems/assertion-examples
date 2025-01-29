@@ -14,43 +14,53 @@ interface IMorpho {
         uint256 marketId;
     }
 
+    struct Position {
+        uint256 supplyShares;
+        uint128 borrowShares;
+        uint128 collateral;
+    }
+
+    mapping(Id => MarketParams) public idToMarketParams;
+
     function _isHealthy(MarketParams memory marketParams, Id memory id, address borrower)
         external
         view
         returns (bool);
 
-    function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address receiver) external;
+    mapping(Id => mapping(address => Position)) public position;
 }
 
 contract LendingHealthFactorAssertion is Assertion {
     IMorpho public morpho = IMorpho(address(0xbeef));
+
+    struct ChangedPositionKeys2Mappings {
+        bytes32 id;
+        bytes32[] borrowers;
+    }
 
     function fnSelectors() external pure override returns (bytes4[] memory assertions) {
         assertions = new bytes4[](1);
         assertions[0] = this.assertionHealthFactor.selector;
     }
 
-    // Check that the position is still healthy after the transaction
-    // This check only works for the withdrawCollateral function from Morpho
-    // Morpho correctly checks the health factor in the withdrawCollateral function,
-    // but if we assume that the check was mistakenly not done, this assertion could
-    // be used to check if the health factor is still healthy after the transaction
-    // return true indicates a valid state
-    // return false indicates an invalid state
+    // Check that all updated positions are still healthy
+    // Morpho correctly checks the health factor in all functions that update positions
+    // but if we assume that the check was mistakenly removed for a future upgrade, this assertion could
+    // be used to check that positions are still healthy after the transaction
+    // revert if the health factor is not healthy
     function assertionHealthFactor() external {
         ph.forkPostState();
-        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(morpho), morpho.withdrawCollateral.selector);
-        if (callInputs.length == 0) {
-            return; // Skip the assertion if the function is not withdrawCollateral
-        }
 
-        for (uint256 i = 0; i < callInputs.length; i++) {
-            bytes memory data = callInputs[i].input;
-            // Skip the first 4 bytes (function selector) by passing the full calldata to decode
-            (IMorpho.MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) =
-                abi.decode(stripSelector(data), (IMorpho.MarketParams, uint256, address, address));
+        // Assume cheatcode exists that can get the state changes from the mapping
+        ChangedPositionKeys2Mappings[] memory keys = ph.getStateChangesFromMapping(type(morpho.position));
 
-            require(morpho._isHealthy(marketParams, marketParams.id, onBehalf), "Health factor is not healthy");
+        for (uint256 i = 0; i < keys.length; i++) {
+            Id id = Id(keys[i].id);
+            MarketParams memory marketParams = morpho.idToMarketParams[id];
+            for (uint256 j = 0; j < keys[i].borrowers.length; j++) {
+                address borrower = keys[i].borrowers[j];
+                require(morpho._isHealthy(marketParams, id, borrower), "Health factor is not healthy");
+            }
         }
     }
 
