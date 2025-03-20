@@ -30,8 +30,7 @@ contract VestraDAOHack is Assertion {
     }
 
     // Check if the user has already unstaked for a maturity
-    // return true indicates a valid state
-    // return false indicates an invalid state
+    // revert if the assertion fails
     function assertionExample() external {
         PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(vestraDAO), vestraDAO.unStake.selector);
         if (callInputs.length == 0) {

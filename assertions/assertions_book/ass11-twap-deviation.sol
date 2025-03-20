@@ -19,8 +19,7 @@ contract TwapDeviationAssertion is Assertion {
     }
 
     // Make sure that the price doesn't deviate more than 5% from the twap
-    // return true indicates a valid state
-    // return false indicates an invalid state
+    // revert if the assertion fails
     function assertionTwapDeviation() external {
         ph.forkPostState();
         uint256 currentPrice = pool.price();

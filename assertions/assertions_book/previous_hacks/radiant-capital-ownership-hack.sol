@@ -30,57 +30,52 @@ contract LendingPoolAddressesProviderAssertions is Assertion {
     }
 
     // Check if the owner has changed
-    // return true indicates a valid state -> owner is the same
-    // return false indicates an invalid state -> owner is different
-    function assertionOwnerChange() external returns (bool) {
+    // revert if the assertion fails
+    function assertionOwnerChange() external {
         ph.forkPreState();
         address prevOwner = lendingPoolAddressesProvider.owner();
         ph.forkPostState();
         address newOwner = lendingPoolAddressesProvider.owner();
-        return prevOwner == newOwner;
+        require(prevOwner == newOwner, "Owner change assertion failed");
     }
 
     // Check if the emergency admin has changed
-    // return true indicates a valid state -> emergency admin is the same
-    // return false indicates an invalid state -> emergency admin is different
-    function assertionEmergencyAdminChange() external returns (bool) {
+    // revert if the assertion fails
+    function assertionEmergencyAdminChange() external {
         ph.forkPreState();
         address prevEmergencyAdmin = lendingPoolAddressesProvider.getEmergencyAdmin();
         ph.forkPostState();
         address newEmergencyAdmin = lendingPoolAddressesProvider.getEmergencyAdmin();
-        return prevEmergencyAdmin == newEmergencyAdmin;
+        require(prevEmergencyAdmin == newEmergencyAdmin, "Emergency admin change assertion failed");
     }
 
     // Check if the pool admin has changed
-    // return true indicates a valid state -> pool admin is the same
-    // return false indicates an invalid state -> pool admin is different
-    function assertionPoolAdminChange() external returns (bool) {
+    // revert if the assertion fails
+    function assertionPoolAdminChange() external {
         ph.forkPreState();
         address prevPoolAdmin = lendingPoolAddressesProvider.getPoolAdmin();
         ph.forkPostState();
         address newPoolAdmin = lendingPoolAddressesProvider.getPoolAdmin();
-        return prevPoolAdmin == newPoolAdmin;
+        require(prevPoolAdmin == newPoolAdmin, "Pool admin change assertion failed");
     }
 
     // Check if the price oracle has changed
-    // return true indicates a valid state -> price oracle is the same
-    // return false indicates an invalid state -> price oracle is different
-    function assertionPriceOracleChange() external returns (bool) {
+    // revert if the assertion fails
+    function assertionPriceOracleChange() external {
         ph.forkPreState();
         address prevPriceOracle = lendingPoolAddressesProvider.getPriceOracle();
         ph.forkPostState();
         address newPriceOracle = lendingPoolAddressesProvider.getPriceOracle();
-        return prevPriceOracle == newPriceOracle;
+        require(prevPriceOracle == newPriceOracle, "Price oracle change assertion failed");
     }
 
     // Check if the lending pool configurator has changed
-    // return true indicates a valid state -> lending pool configurator is the same
-    // return false indicates an invalid state -> lending pool configurator is different
-    function assertionLendingPoolConfiguratorChange() external returns (bool) {
+    // revert if the assertion fails
+    function assertionLendingPoolConfiguratorChange() external {
         ph.forkPreState();
         address prevLendingPoolConfigurator = lendingPoolAddressesProvider.getLendingPoolConfigurator();
         ph.forkPostState();
         address newLendingPoolConfigurator = lendingPoolAddressesProvider.getLendingPoolConfigurator();
-        return prevLendingPoolConfigurator == newLendingPoolConfigurator;
+        require(prevLendingPoolConfigurator == newLendingPoolConfigurator, "Lending pool configurator change assertion failed");
     }
 }

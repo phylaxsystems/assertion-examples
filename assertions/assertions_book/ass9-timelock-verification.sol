@@ -24,8 +24,7 @@ contract TimelockVerification is Assertion {
 
     // This assertion checks that if a timelock is activated that it's within the correct parameters
     // and that the admin is the same as the pre-state admin
-    // return true indicates a valid state
-    // return false indicates an invalid state
+    // revert if the assertion fails
     function assertionTimelock() external {
         address preAdmin = governance.timelock().admin;
         ph.forkPreState();
