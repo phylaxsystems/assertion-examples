@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -13,9 +13,8 @@ interface IPool {
 contract TwapDeviationAssertion is Assertion {
     IPool public pool = IPool(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionTwapDeviation.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionTwapDeviation.selector);
     }
 
     // Make sure that the price doesn't deviate more than 5% from the twap
@@ -25,8 +24,8 @@ contract TwapDeviationAssertion is Assertion {
         uint256 currentPrice = pool.price();
         uint256 twapPrice = pool.twap();
         uint256 maxDeviation = 5; // 5% deviation, define this according to your protocol
-        uint256 deviation = (((currentPrice > twapPrice) ? currentPrice - twapPrice : twapPrice - currentPrice) * 100) /
-            twapPrice;
+        uint256 deviation =
+            (((currentPrice > twapPrice) ? currentPrice - twapPrice : twapPrice - currentPrice) * 100) / twapPrice;
         require(deviation <= maxDeviation, "Price deviation is too large");
     }
 }

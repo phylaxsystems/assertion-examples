@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -13,9 +13,8 @@ interface IMorpho {
 contract TokensBorrowedInvariant is Assertion {
     IMorpho public morpho = IMorpho(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionBorrowedInvariant.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionBorrowedInvariant.selector);
     }
 
     // Check that the invariant that the total supply of assets is greater than or equal to the total borrowed assets is maintained

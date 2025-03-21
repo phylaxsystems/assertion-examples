@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -38,9 +38,8 @@ contract LendingHealthFactorAssertion is Assertion {
         bytes32[] borrowers;
     }
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionHealthFactor.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionHealthFactor.selector);
     }
 
     // Check that all updated positions are still healthy
@@ -55,8 +54,8 @@ contract LendingHealthFactorAssertion is Assertion {
         ChangedPositionKeys2Mappings[] memory keys = ph.getStateChangesFromMapping(type(morpho.position));
 
         for (uint256 i = 0; i < keys.length; i++) {
-            Id id = Id(keys[i].id);
-            MarketParams memory marketParams = morpho.idToMarketParams[id];
+            IMorpho.Id memory id = IMorpho.Id(keys[i].id);
+            IMorpho.MarketParams memory marketParams = morpho.idToMarketParams[id];
             for (uint256 j = 0; j < keys[i].borrowers.length; j++) {
                 address borrower = keys[i].borrowers[j];
                 require(morpho._isHealthy(marketParams, id, borrower), "Health factor is not healthy");

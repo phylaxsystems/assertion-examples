@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -14,9 +14,8 @@ interface IERC4626 {
 contract ERC4626AssetsSharesAssertion is Assertion {
     IERC4626 public erc4626 = IERC4626(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionAssetsShares.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionAssetsShares.selector);
     }
 
     // Make sure that the total shares are not more than the total assets

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
-
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -14,15 +13,14 @@ interface IPool {
 contract AmmFeeVerificationAssertion is Assertion {
     IPool public pool = IPool(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.feeVerification.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionFeeVerification.selector);
     }
 
     // Check that the fee is the same before and after the transaction
     // and that they maintain correct percentage based on stable or not
     // revert if the fee is not the same before and after the transaction
-    function feeVerification() external {
+    function assertionFeeVerification() external {
         ph.forkPreState();
         uint256 preFee = pool.fee();
         bool preStable = pool.stable(); // check pool is stable or not

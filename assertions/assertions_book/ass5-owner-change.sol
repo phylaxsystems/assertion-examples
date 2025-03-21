@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -14,10 +14,9 @@ interface IOwnership {
 contract OwnerChange is Assertion {
     IOwnership public ownership = IOwnership(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](2);
-        assertions[0] = this.assertionOwnerChange.selector;
-        assertions[1] = this.assertionAdminChange.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionOwnerChange.selector);
+        registerCallTrigger(this.assertionAdminChange.selector);
     }
 
     // This function is used to check if the owner has changed.

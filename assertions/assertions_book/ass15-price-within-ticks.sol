@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -29,9 +29,8 @@ contract ExampleAssertion is Assertion {
     int24 constant MIN_TICK = -887272;
     int24 constant MAX_TICK = 887272;
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1); // Define the number of triggers
-        assertions[0] = this.assertionExample.selector; // Define the trigger
+    function triggers() external view override {
+        registerCallTrigger(this.assertionExample.selector);
     }
 
     // Check that the price is within the tick bounds and that the tick is divisible by the tick spacing

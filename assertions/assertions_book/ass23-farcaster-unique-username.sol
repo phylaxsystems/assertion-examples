@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -13,9 +13,8 @@ interface IFarcaster {
 contract FarcasterUsernameAssertion is Assertion {
     IFarcaster public farcaster = IFarcaster(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertUniqueUsername.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertUniqueUsername.selector);
     }
 
     function assertUniqueUsername() external {

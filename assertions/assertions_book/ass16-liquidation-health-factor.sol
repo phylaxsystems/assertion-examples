@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -33,9 +33,8 @@ contract MorphoHealthFactorAssertion is Assertion {
     uint256 constant LIQUIDATION_THRESHOLD = 1e18; // 1.0
     uint256 constant MIN_HEALTH_FACTOR = 1.02e18; // 1.02 - small buffer above liquidation
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertHealthFactor.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertHealthFactor.selector);
     }
 
     // Make sure that liquidation can't happen if the position is healthy

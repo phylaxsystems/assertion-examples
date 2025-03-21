@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -12,9 +12,8 @@ interface IBeefyVault {
 contract BeefyPanicAssertion is Assertion {
     IBeefyVault public vault = IBeefyVault(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1); // Define the number of triggers
-        assertions[0] = this.assertionPanickedCanOnlyDecreaseBalance.selector; // Define the trigger
+    function triggers() external view override {
+        registerCallTrigger(this.assertionPanickedCanOnlyDecreaseBalance.selector);
     }
 
     // Check that if the state is panicked that the pool balance can only decrease

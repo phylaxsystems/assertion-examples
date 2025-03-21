@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -14,9 +14,8 @@ interface IMorpho {
 contract PositionSumAssertion is Assertion {
     IMorpho morpho = IMorpho(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionPositionsSum.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionPositionsSum.selector);
     }
 
     // Compare the sum of all positions to the total supply reported by the protocol
