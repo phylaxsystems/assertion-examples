@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -24,9 +24,8 @@ contract FarcasterMessageAssertion is Assertion {
     bytes4 constant POST_MESSAGE = bytes4(keccak256("postMessage((uint256,address,bytes,uint256,bytes))"));
     uint256 constant MAX_CONTENT_LENGTH = 320; // Farcaster's max message length
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertMessageValidity.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertMessageValidity.selector);
     }
 
     function assertMessageValidity() external {

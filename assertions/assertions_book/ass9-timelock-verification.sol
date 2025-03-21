@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -17,9 +17,8 @@ interface IGovernance {
 contract TimelockVerification is Assertion {
     IGovernance governance = IGovernance(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionTimelock.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionTimelock.selector);
     }
 
     // This assertion checks that if a timelock is activated that it's within the correct parameters

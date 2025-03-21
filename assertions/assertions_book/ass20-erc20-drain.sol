@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -13,9 +13,8 @@ contract ERC20DrainAssertion is Assertion {
     IERC20 public erc20 = IERC20(address(0xbeef));
     IExampleContract public example = IExampleContract(address(0xf00));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1); // Define the number of triggers
-        assertions[0] = this.assertionERC20Drain.selector; // Define the trigger
+    function triggers() external view override {
+        registerCallTrigger(this.assertionERC20Drain.selector);
     }
 
     // Don't allow for more than x% of the total balance to be transferred out in a single transaction

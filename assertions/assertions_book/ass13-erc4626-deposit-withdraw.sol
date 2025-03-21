@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol"; // Credible Layer precompiles
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -15,9 +15,8 @@ interface IERC4626 {
 contract ERC4626DepositAssertion is Assertion {
     IERC4626 public erc4626 = IERC4626(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionDeposit.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionDeposit.selector);
     }
 
     // Make sure that the preview deposit is correct

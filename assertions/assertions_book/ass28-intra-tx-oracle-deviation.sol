@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -12,9 +12,8 @@ interface IOracle {
 contract IntraTxOracleDeviationAssertion is Assertion {
     IOracle public oracle = IOracle(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1); // Define the number of triggers
-        assertions[0] = this.assertionIntraTxOracleDeviation.selector; // Define the trigger
+    function triggers() external view override {
+        registerCallTrigger(this.assertionIntraTxOracleDeviation.selector);
     }
 
     // Go through all the updatePrice calls in a transaction and check for large deviations

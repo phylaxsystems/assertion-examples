@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -8,9 +8,8 @@ interface IExampleContract {}
 contract EtherDrainAssertion is Assertion {
     IExampleContract public example = IExampleContract(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1); // Define the number of triggers
-        assertions[0] = this.assertionEtherDrain.selector; // Define the trigger
+    function triggers() external view override {
+        registerBalanceChangeTrigger(this.assertionEtherDrain.selector);
     }
 
     // Don't allow more than x% of the total ether balance to be drained in a single transaction

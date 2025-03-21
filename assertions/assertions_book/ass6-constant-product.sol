@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -13,9 +13,8 @@ interface IAmm {
 contract ConstantProductAssertion is Assertion {
     IAmm public amm = IAmm(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertionConstantProduct.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionConstantProduct.selector);
     }
 
     // Make sure that the product of the reserves is equal to the constant product

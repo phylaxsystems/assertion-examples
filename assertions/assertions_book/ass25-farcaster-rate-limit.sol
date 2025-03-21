@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -18,9 +18,8 @@ contract FarcasterRateLimitAssertion is Assertion {
     uint256 constant MAX_POSTS_PER_HOUR = 60;
     uint256 constant HOUR = 1 hours;
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1);
-        assertions[0] = this.assertRateLimit.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertRateLimit.selector);
     }
 
     function assertRateLimit() external {

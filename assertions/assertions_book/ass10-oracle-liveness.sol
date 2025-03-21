@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 
@@ -13,10 +13,9 @@ interface IOracle {
 contract OracleLivenessAssertion is Assertion {
     IOracle public oracle = IOracle(address(0xbeef));
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](2);
-        assertions[0] = this.assertionOracleLiveness.selector;
-        assertions[1] = this.assertionOraclePrice.selector;
+    function triggers() external view override {
+        registerCallTrigger(this.assertionOracleLiveness.selector);
+        registerCallTrigger(this.assertionOraclePrice.selector);
     }
 
     // Make sure that the oracle has been updated within the last 10 minutes

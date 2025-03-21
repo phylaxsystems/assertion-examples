@@ -1,4 +1,5 @@
-pragma solidity 0.8.28;
+// SPDX-License-Identifier: MITS
+pragma solidity 0.8.29;
 
 import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
 import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
@@ -16,9 +17,8 @@ contract BeefyHarvestAssertion is Assertion {
 
     bytes4 constant HARVEST = IBeefyVault.harvest.selector;
 
-    function fnSelectors() external pure override returns (bytes4[] memory assertions) {
-        assertions = new bytes4[](1); // Define the number of triggers
-        assertions[0] = this.assertionHarvestIncreasesBalance.selector; // Define the trigger
+    function triggers() external view override {
+        registerCallTrigger(this.assertionHarvestIncreasesBalance.selector);
     }
 
     // Assert that the balance of the vault increases after a harvest and that the price per share increases or stays the same
