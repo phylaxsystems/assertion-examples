@@ -1,41 +1,70 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.29;
 
-import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+import {Assertion} from "credible-std/Assertion.sol";
+import {PhEvm} from "credible-std/PhEvm.sol";
 
 interface IOwnership {
     function owner() external view returns (address);
-
     function admin() external view returns (address);
 }
 
-// This is a simple example of an assertion that checks if the owner has changed.
-// You can import your own ownership contract and modify the assertion accordingly.
 contract OwnerChange is Assertion {
     IOwnership public ownership = IOwnership(address(0xbeef));
 
     function triggers() external view override {
-        registerCallTrigger(this.assertionOwnerChange.selector);
-        registerCallTrigger(this.assertionAdminChange.selector);
+        // Register triggers for changes to both owner and admin storage slots
+        registerStorageChangeTrigger(this.assertionOwnerChange.selector, bytes32(uint256(0)));
+        registerStorageChangeTrigger(this.assertionAdminChange.selector, bytes32(uint256(1)));
     }
 
-    // This function is used to check if the owner has changed.
+    // Assert that the owner address doesn't change during the state transition
     function assertionOwnerChange() external {
-        ph.forkPreState(); // fork the pre state - the state before the transaction
-        address preOwner = ownership.owner(); // get the owner before the transaction
-        ph.forkPostState(); // fork the post state - the state after the transaction
-        address postOwner = ownership.owner(); // get the owner after the transaction
-        require(preOwner == postOwner, "Owner has changed");
+        // Get pre-state owner
+        ph.forkPreState();
+        address preOwner = ownership.owner();
+
+        // Get post-state owner
+        ph.forkPostState();
+        address postOwner = ownership.owner();
+
+        // Get all state changes for the owner slot
+        address[] memory changes = getStateChangesAddress(
+            address(ownership),
+            bytes32(uint256(0)) // First storage slot for owner address
+        );
+
+        // Verify owner hasn't changed after the transaction
+        require(preOwner == postOwner, "Owner changed");
+
+        // Additional check: verify no changes take place in the owner slot throughout the callstack
+        for (uint256 i = 0; i < changes.length; i++) {
+            require(changes[i] == preOwner, "Unauthorized owner change detected");
+        }
     }
 
-    // This function is used to check if the admin has changed.
-    // It works in the same way as the ownerChange function, and here it's used as
-    // an example of how to add another trigger to the assertion.
+    // Assert that the admin address doesn't change during the state transition
     function assertionAdminChange() external {
-        ph.forkPreState(); // fork the pre state - the state before the transaction
-        address preAdmin = ownership.admin(); // get the admin before the transaction
-        ph.forkPostState(); // fork the post state - the state after the transaction
-        address postAdmin = ownership.admin(); // get the admin after the transaction
-        require(preAdmin == postAdmin, "Admin has changed");
+        // Get pre-state admin
+        ph.forkPreState();
+        address preAdmin = ownership.admin();
+
+        // Get post-state admin
+        ph.forkPostState();
+        address postAdmin = ownership.admin();
+
+        // Get all state changes for the admin slot
+        address[] memory changes = getStateChangesAddress(
+            address(ownership),
+            bytes32(uint256(1)) // Second storage slot for admin address
+        );
+
+        // Verify admin hasn't changed after the transaction
+        require(preAdmin == postAdmin, "Admin changed");
+
+        // Additional check: verify no changes take place in the admin slot throughout the callstack
+        for (uint256 i = 0; i < changes.length; i++) {
+            require(changes[i] == preAdmin, "Unauthorized admin change detected");
+        }
     }
 }
