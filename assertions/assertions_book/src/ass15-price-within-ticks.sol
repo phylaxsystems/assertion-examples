@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.29;
 
-import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
+import {Assertion} from "credible-std/Assertion.sol";
+import {PhEvm} from "credible-std/PhEvm.sol";
 
 // Uniswap v3 pool style interface
 interface IUniswapV3Pool {
@@ -18,23 +19,27 @@ interface IUniswapV3Pool {
             bool unlocked
         );
     function tickSpacing() external view returns (int24);
-    function tickToPrice(int24 tick) external view returns (uint256);
 }
 
-// Check that the price is within the tick bounds
-contract ExampleAssertion is Assertion {
-    IUniswapV3Pool public pool = IUniswapV3Pool(address(0xbeef));
+contract PriceWithinTicksAssertion is Assertion {
+    IUniswapV3Pool public pool;
 
     // Uniswap V3 tick bounds
     int24 constant MIN_TICK = -887272;
     int24 constant MAX_TICK = 887272;
 
+    constructor(IUniswapV3Pool pool_) {
+        pool = pool_;
+    }
+
     function triggers() external view override {
-        registerCallTrigger(this.assertionExample.selector);
+        // Register trigger for changes to the tick storage slot
+        // Assumes tick is stored in slot0 of the pool contract
+        registerStorageChangeTrigger(this.priceWithinTicks.selector, bytes32(uint256(0)));
     }
 
     // Check that the price is within the tick bounds and that the tick is divisible by the tick spacing
-    function assertionExample() external {
+    function priceWithinTicks() external {
         // Get pre-swap state
         ph.forkPreState();
         (, int24 preTick,,,,,) = pool.slot0();
@@ -49,23 +54,5 @@ contract ExampleAssertion is Assertion {
 
         // Check 2: Tick must be divisible by tickSpacing
         require(postTick % spacing == 0, "Tick not aligned with spacing");
-
-        // Check 3: Tick movement should be reasonable
-        int24 tickDelta = postTick - preTick;
-        require(tickDelta < 1000 && tickDelta > -1000, "Suspicious tick movement");
-
-        // Check price impact
-        uint256 prePrice = pool.tickToPrice(preTick);
-        uint256 postPrice = pool.tickToPrice(postTick);
-        uint256 priceChange;
-
-        if (postPrice > prePrice) {
-            priceChange = ((postPrice - prePrice) * 10000) / prePrice;
-        } else {
-            priceChange = ((prePrice - postPrice) * 10000) / prePrice;
-        }
-
-        // Alert on large price impacts (e.g., > 10%)
-        require(priceChange <= 1000, "Price impact too high"); // Should be what the protocol defines
     }
 }
