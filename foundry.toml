@@ -1,0 +1,5 @@
+[profile.default]
+src = "assertions"
+out = "out"
+libs = ["lib"]
+remappings = ["credible-std/=lib/credible-std/src/"]
