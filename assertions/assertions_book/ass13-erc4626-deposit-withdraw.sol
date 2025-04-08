@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.29;
 
-import {Assertion} from "../../lib/credible-std/src/Assertion.sol"; // Credible Layer precompiles
-import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
+import {Assertion} from "credible-std/Assertion.sol";
+import {PhEvm} from "credible-std/PhEvm.sol";
 
 interface IERC4626 {
     function deposit(uint256 assets, address receiver) external returns (uint256);
@@ -11,43 +11,38 @@ interface IERC4626 {
     function balanceOf(address account) external view returns (uint256);
 }
 
-// Make sure that deposit are correct
 contract ERC4626DepositAssertion is Assertion {
     IERC4626 public erc4626 = IERC4626(address(0xbeef));
 
     function triggers() external view override {
-        registerCallTrigger(this.assertionDeposit.selector);
+        // Register trigger for deposit calls to the ERC4626 vault
+        registerCallTrigger(this.assertionDeposit.selector, erc4626.deposit.selector);
     }
 
-    // Make sure that the preview deposit is correct
-    // revert if the assertion fails
+    // Assert that deposits maintain correct share accounting
     function assertionDeposit() external {
-        // Get the sender of the transaction and the calldata
+        // Get all deposit calls to the ERC4626 vault
         PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(erc4626), erc4626.deposit.selector);
-        if (callInputs.length == 0) {
-            return;
-        }
+
+        // Check each deposit call
         for (uint256 i = 0; i < callInputs.length; i++) {
+            // Get pre-state values
             ph.forkPreState();
-            bytes memory data = callInputs[i].input;
-            (uint256 assets, address receiver) = abi.decode(stripSelector(data), (uint256, address));
+            (uint256 assets, address receiver) = abi.decode(callInputs[i].input, (uint256, address));
+
+            // Calculate expected shares and capture pre-state balances
             uint256 expectedShares = erc4626.previewDeposit(assets);
             uint256 preTotalAssets = erc4626.totalAssets();
             uint256 preBalance = erc4626.balanceOf(receiver);
+
+            // Get post-state values
             ph.forkPostState();
             uint256 postBalance = erc4626.balanceOf(receiver);
             uint256 postTotalAssets = erc4626.totalAssets();
-            require(postBalance == expectedShares + preBalance, "Deposit assertion failed");
-            require(postTotalAssets == preTotalAssets + assets, "Total assets assertion failed");
-        }
-    }
 
-    function stripSelector(bytes memory input) internal pure returns (bytes memory) {
-        // Create a new bytes memory and copy everything after the selector
-        bytes memory paramData = new bytes(32);
-        for (uint256 i = 4; i < input.length; i++) {
-            paramData[i - 4] = input[i];
+            // Verify share accounting is correct
+            require(postBalance == expectedShares + preBalance, "Deposit assertion failed: incorrect share balance");
+            require(postTotalAssets == preTotalAssets + assets, "Deposit assertion failed: incorrect total assets");
         }
-        return paramData;
     }
 }
