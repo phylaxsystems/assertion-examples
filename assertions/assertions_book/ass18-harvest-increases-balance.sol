@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: MITS
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.29;
 
-import {Assertion} from "../../lib/credible-std/src/Assertion.sol";
-import {PhEvm} from "../../lib/credible-std/src/PhEvm.sol";
+import {Assertion} from "credible-std/Assertion.sol";
+import {PhEvm} from "credible-std/PhEvm.sol";
 
 interface IBeefyVault {
     function balance() external view returns (uint256);
@@ -10,38 +10,50 @@ interface IBeefyVault {
     function harvest() external;
 }
 
-// Assert that the balance of the vault increases after a harvest
-// Inspired by // https://github.com/beefyfinance/beefy-contracts/blob/master/forge/test/vault/ChainVaultsTest.t.sol#L77-L110
+// Inspired by https://github.com/beefyfinance/beefy-contracts/blob/master/forge/test/vault/ChainVaultsTest.t.sol#L77-L110
 contract BeefyHarvestAssertion is Assertion {
-    IBeefyVault public vault = IBeefyVault(address(0xbeef));
+    IBeefyVault public vault;
 
-    bytes4 constant HARVEST = IBeefyVault.harvest.selector;
-
-    function triggers() external view override {
-        registerCallTrigger(this.assertionHarvestIncreasesBalance.selector);
+    constructor(address vault_) {
+        vault = IBeefyVault(vault_);
     }
 
-    // Assert that the balance of the vault increases after a harvest and that the price per share increases or stays the same
+    function triggers() external view override {
+        // Register trigger for harvest function calls
+        registerCallTrigger(this.assertionHarvestIncreasesBalance.selector, vault.harvest.selector);
+    }
+
+    // Assert that the balance of the vault doesn't decrease after a harvest
+    // and that the price per share doesn't decrease
     function assertionHarvestIncreasesBalance() external {
-        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(vault), vault.harvest.selector);
-        if (callInputs.length == 0) {
-            return;
-        }
+        // Check pre-harvest state
+        ph.forkPreState();
+        uint256 preBalance = vault.balance();
+        uint256 prePricePerShare = vault.getPricePerFullShare();
 
-        for (uint256 i = 0; i < callInputs.length; i++) {
-            ph.forkPreState();
-            uint256 preBalance = vault.balance();
-            uint256 prePricePerShare = vault.getPricePerFullShare();
+        // Check post-harvest state
+        ph.forkPostState();
+        uint256 postBalance = vault.balance();
+        uint256 postPricePerShare = vault.getPricePerFullShare();
 
-            ph.forkPostState();
-            uint256 postBalance = vault.balance();
-            uint256 postPricePerShare = vault.getPricePerFullShare();
+        // Balance should not decrease after harvest (can stay the same if harvested recently)
+        require(postBalance >= preBalance, "Harvest decreased balance");
 
-            // Balance should increase after harvest
-            require(postBalance > preBalance, "Harvest did not increase balance");
+        // Price per share should increase or stay the same
+        require(postPricePerShare >= prePricePerShare, "Price per share decreased after harvest");
 
-            // Price per share should increase or stay the same
-            require(postPricePerShare >= prePricePerShare, "Price per share decreased after harvest");
+        // Get all state changes to the balance slot
+        uint256[] memory balanceChanges = getStateChangesUint(
+            address(vault),
+            bytes32(uint256(0)) // First storage slot for balance
+        );
+
+        // Verify that all intermediate balance changes are valid
+        // Each balance change should be >= the previous balance in the sequence
+        uint256 lastBalance = preBalance;
+        for (uint256 i = 0; i < balanceChanges.length; i++) {
+            require(balanceChanges[i] >= lastBalance, "Invalid balance decrease detected during harvest");
+            lastBalance = balanceChanges[i];
         }
     }
 }
