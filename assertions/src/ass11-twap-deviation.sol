@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.29;
+pragma solidity ^0.8.13;
 
 import {Assertion} from "credible-std/Assertion.sol";
 import {PhEvm} from "credible-std/PhEvm.sol";
@@ -49,6 +49,7 @@ contract TwapDeviationAssertion is Assertion {
 
     // Helper function to calculate percentage deviation
     function calculateDeviation(uint256 referencePrice, uint256 currentPrice) internal pure returns (uint256) {
-        return (((currentPrice > referencePrice) ? currentPrice - referencePrice : referencePrice - currentPrice) * 100) / referencePrice;
+        return (((currentPrice > referencePrice) ? currentPrice - referencePrice : referencePrice - currentPrice) * 100)
+            / referencePrice;
     }
 }
