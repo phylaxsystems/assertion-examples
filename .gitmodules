@@ -1,3 +1,0 @@
-[submodule "lib/credible-std"]
-	path = lib/credible-std
-	url = git@github.com:phylaxsystems/credible-std.git
