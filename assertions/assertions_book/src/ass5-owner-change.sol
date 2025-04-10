@@ -28,14 +28,16 @@ contract OwnerChange is Assertion {
         ph.forkPostState();
         address postOwner = ownership.owner();
 
+        // Verify owner hasn't changed after the transaction
+        // Fail early if the owner has changed
+        require(preOwner == postOwner, "Owner changed");
+
         // Get all state changes for the owner slot
+        // This checks if the owner address has changed throughout the callstack
         address[] memory changes = getStateChangesAddress(
             address(ownership),
             bytes32(uint256(0)) // First storage slot for owner address
         );
-
-        // Verify owner hasn't changed after the transaction
-        require(preOwner == postOwner, "Owner changed");
 
         // Additional check: verify no changes take place in the owner slot throughout the callstack
         for (uint256 i = 0; i < changes.length; i++) {

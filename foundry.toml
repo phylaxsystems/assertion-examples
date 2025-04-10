@@ -3,8 +3,3 @@ src = "assertions"
 out = "out"
 libs = ["lib"]
 solc = "0.8.29"
-remappings = [
-    "credible-std/=lib/credible-std/src/",
-    "forge-std/=lib/forge-std/src/",
-    "@credible-std/=lib/credible-std/src/",
-]
