@@ -12,7 +12,11 @@ interface IPool {
 
 // Check that fee invariants are maintained
 contract AmmFeeVerificationAssertion is Assertion {
-    IPool public pool = IPool(address(0xbeef));
+    IPool public pool;
+
+    constructor(address _pool) {
+        pool = IPool(_pool);
+    }
 
     // Hardcoded whitelist of allowed fee values
     uint256 private constant STABLE_POOL_FEE_1 = 1; // 0.1%

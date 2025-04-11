@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {FarcasterMessageValidity} from "../src/ass22-farcaster-message-validity.sol";
-import {IFarcasterMessage} from "../src/ass22-farcaster-message-validity.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {FarcasterProtocolAssertion} from "../src/ass22-farcaster-message-validity.a.sol";
+import {IFarcaster} from "../src/ass22-farcaster-message-validity.a.sol";
 
-contract TestFarcasterMessageValidity is Test, Credible {
-    IFarcasterMessage public protocol;
+contract TestFarcasterMessageValidity is CredibleTest, Test {
+    IFarcaster public protocol;
 
     function setUp() public {
-        protocol = IFarcasterMessage(address(0xbeef));
+        protocol = IFarcaster(address(0xbeef));
     }
 }

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {TimelockVerification} from "../src/ass9-timelock-verification.sol";
-import {ITimelock} from "../src/ass9-timelock-verification.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {TimelockVerificationAssertion} from "../src/ass9-timelock-verification.a.sol";
+import {IGovernance} from "../src/ass9-timelock-verification.a.sol";
 
-contract TestTimelockVerification is Test, Credible {
-    ITimelock public protocol;
+contract TestTimelockVerification is CredibleTest, Test {
+    IGovernance public protocol;
 
     function setUp() public {
-        protocol = ITimelock(address(0xbeef));
+        protocol = IGovernance(address(0xbeef));
     }
 }

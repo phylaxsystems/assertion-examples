@@ -13,12 +13,17 @@ interface IDex {
 }
 
 contract OracleLivenessAssertion is Assertion {
-    IOracle public oracle = IOracle(address(0xbeef));
-    IDex public dex = IDex(address(0xdead));
+    IOracle public oracle;
+    IDex public dex;
 
     // Maximum time window (in seconds) that oracle data can be considered fresh
     // This is a constant that should be adjusted based on the protocol's requirements
     uint256 public constant MAX_UPDATE_WINDOW = 10 minutes;
+
+    constructor(address _oracle, address _dex) {
+        oracle = IOracle(_oracle);
+        dex = IDex(_dex);
+    }
 
     function triggers() external view override {
         // Register trigger for the swap function which relies on oracle data

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {LiquidationHealthFactor} from "../src/ass16-liquidation-health-factor.sol";
-import {ILendingProtocol} from "../src/ass16-liquidation-health-factor.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {LiquidationHealthFactorAssertion} from "../src/ass16-liquidation-health-factor.a.sol";
+import {ILendingProtocol} from "../src/ass16-liquidation-health-factor.a.sol";
 
-contract TestLiquidationHealthFactor is Test, Credible {
+contract TestLiquidationHealthFactor is CredibleTest, Test {
     ILendingProtocol public protocol;
 
     function setUp() public {

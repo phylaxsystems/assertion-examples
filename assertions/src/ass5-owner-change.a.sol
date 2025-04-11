@@ -9,8 +9,12 @@ interface IOwnership {
     function admin() external view returns (address);
 }
 
-contract OwnerChange is Assertion {
-    IOwnership public ownership = IOwnership(address(0xbeef));
+contract OwnerChangeAssertion is Assertion {
+    IOwnership public ownership;
+
+    constructor(address _ownership) {
+        ownership = IOwnership(_ownership);
+    }
 
     function triggers() external view override {
         // Register triggers for changes to both owner and admin storage slots

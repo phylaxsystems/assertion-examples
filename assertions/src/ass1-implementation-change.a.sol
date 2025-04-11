@@ -8,8 +8,12 @@ interface IImplementation {
     function implementation() external view returns (address);
 }
 
-contract ImplementationChange is Assertion {
-    IImplementation public implementation = IImplementation(address(0xbeef));
+contract ImplementationChangeAssertion is Assertion {
+    IImplementation public implementation;
+
+    constructor(address _implementation) {
+        implementation = IImplementation(_implementation);
+    }
 
     function triggers() external view override {
         // Register trigger for changes to the implementation address storage slot

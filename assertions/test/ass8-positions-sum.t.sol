@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {PositionSumAssertion} from "../src/ass8-positions-sum.sol";
-import {ILending} from "../src/ass8-positions-sum.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {PositionSumAssertion} from "../src/ass8-positions-sum.a.sol";
+import {ILending} from "../src/ass8-positions-sum.a.sol";
 
-contract TestPositionSumAssertion is Test, Credible {
+contract TestPositionSumAssertion is CredibleTest, Test {
     ILending public protocol;
 
     function setUp() public {

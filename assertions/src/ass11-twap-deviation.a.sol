@@ -10,7 +10,11 @@ interface IPool {
 }
 
 contract TwapDeviationAssertion is Assertion {
-    IPool public pool = IPool(address(0xbeef));
+    IPool public pool;
+
+    constructor(address _pool) {
+        pool = IPool(_pool);
+    }
 
     function triggers() external view override {
         // Register trigger for changes to the current price

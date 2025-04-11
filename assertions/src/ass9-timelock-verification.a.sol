@@ -14,8 +14,12 @@ interface IGovernance {
     function timelock() external view returns (Timelock memory);
 }
 
-contract TimelockVerification is Assertion {
-    IGovernance public governance = IGovernance(address(0xbeef));
+contract TimelockVerificationAssertion is Assertion {
+    IGovernance public governance;
+
+    constructor(address _governance) {
+        governance = IGovernance(_governance);
+    }
 
     function triggers() external view override {
         // Register trigger for changes to the timelock storage slot

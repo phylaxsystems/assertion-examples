@@ -14,7 +14,11 @@ interface ILending {
 
 // Assert that the sum of all positions is the same as the total supply reported by the protocol
 contract PositionSumAssertion is Assertion {
-    ILending public lending = ILending(address(0xbeef));
+    ILending public lending;
+
+    constructor(address _lending) {
+        lending = ILending(_lending);
+    }
 
     function triggers() external view override {
         // Register trigger for changes to the total supply

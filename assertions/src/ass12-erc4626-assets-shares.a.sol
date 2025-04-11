@@ -11,7 +11,11 @@ interface IERC4626 {
 }
 
 contract ERC4626AssetsSharesAssertion is Assertion {
-    IERC4626 public vault = IERC4626(address(0xbeef));
+    IERC4626 public vault;
+
+    constructor(address _vault) {
+        vault = IERC4626(_vault);
+    }
 
     function triggers() external view override {
         // Register trigger specifically for changes to the total supply storage slot

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {ERC4626AssetsShares} from "../src/ass12-erc4626-assets-shares.sol";
-import {IERC4626} from "../src/ass12-erc4626-assets-shares.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {ERC4626AssetsSharesAssertion} from "../src/ass12-erc4626-assets-shares.a.sol";
+import {IERC4626} from "../src/ass12-erc4626-assets-shares.a.sol";
 
-contract TestERC4626AssetsShares is Test, Credible {
+contract TestERC4626AssetsShares is CredibleTest, Test {
     IERC4626 public protocol;
 
     function setUp() public {

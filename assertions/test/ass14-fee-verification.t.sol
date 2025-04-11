@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {FeeVerification} from "../src/ass14-fee-verification.sol";
-import {IUniswapV3Pool} from "../src/ass14-fee-verification.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {AmmFeeVerificationAssertion} from "../src/ass14-fee-verification.a.sol";
+import {IPool} from "../src/ass14-fee-verification.a.sol";
 
-contract TestFeeVerification is Test, Credible {
-    IUniswapV3Pool public protocol;
+contract TestFeeVerification is CredibleTest, Test {
+    IPool public protocol;
 
     function setUp() public {
-        protocol = IUniswapV3Pool(address(0xbeef));
+        protocol = IPool(address(0xbeef));
     }
 }

@@ -31,7 +31,11 @@ interface IMorpho {
 }
 
 contract LendingHealthFactorAssertion is Assertion {
-    IMorpho public morpho = IMorpho(address(0xbeef));
+    IMorpho public morpho;
+
+    constructor(address _morpho) {
+        morpho = IMorpho(_morpho);
+    }
 
     // Storage slot for the position mapping
     // This is the slot where the position mapping is stored in the contract

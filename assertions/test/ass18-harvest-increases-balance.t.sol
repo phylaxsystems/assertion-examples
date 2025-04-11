@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test} from "credible-std/lib/forge-std/src/Test.sol";
-import {Credible} from "credible-std/Credible.sol";
-import {HarvestIncreasesBalance} from "../src/ass18-harvest-increases-balance.sol";
-import {IYieldSource} from "../src/ass18-harvest-increases-balance.sol";
+import {Test} from "forge-std/Test.sol";
+import {CredibleTest} from "credible-std/CredibleTest.sol";
+import {BeefyHarvestAssertion} from "../src/ass18-harvest-increases-balance.a.sol";
+import {IBeefyVault} from "../src/ass18-harvest-increases-balance.a.sol";
 
-contract TestHarvestIncreasesBalance is Test, Credible {
-    IYieldSource public protocol;
+contract TestHarvestIncreasesBalance is CredibleTest, Test {
+    IBeefyVault public protocol;
 
     function setUp() public {
-        protocol = IYieldSource(address(0xbeef));
+        protocol = IBeefyVault(address(0xbeef));
     }
 }
