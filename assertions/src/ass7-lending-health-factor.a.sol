@@ -37,45 +37,65 @@ contract LendingHealthFactorAssertion is Assertion {
         morpho = IMorpho(_morpho);
     }
 
-    // Storage slot for the position mapping
-    // This is the slot where the position mapping is stored in the contract
-    bytes32 constant POSITION_MAPPING_SLOT = bytes32(uint256(2)); // Adjust this based on actual storage layout
-
     function triggers() external view override {
-        // Register triggers for functions that should maintain healthy positions
-        // For example: supply, borrow, withdraw, repay functions
-        registerCallTrigger(this.assertionHealthFactor.selector, morpho.supply.selector);
-        registerCallTrigger(this.assertionHealthFactor.selector, morpho.borrow.selector);
-        registerCallTrigger(this.assertionHealthFactor.selector, morpho.withdraw.selector);
-        registerCallTrigger(this.assertionHealthFactor.selector, morpho.repay.selector);
+        // Register triggers for each function that should maintain healthy positions
+        registerCallTrigger(this.assertionSupply.selector, morpho.supply.selector);
+        registerCallTrigger(this.assertionBorrow.selector, morpho.borrow.selector);
+        registerCallTrigger(this.assertionWithdraw.selector, morpho.withdraw.selector);
+        registerCallTrigger(this.assertionRepay.selector, morpho.repay.selector);
     }
 
-    // Check that all updated positions are still healthy after operations
-    // that should maintain healthy positions
-    function assertionHealthFactor() external {
-        // Get all state changes for the position mapping
-        // We need to check each position that might have changed
-        // This is a simplified example - in practice you would need to:
-        // 1. Track which positions are affected by the current transaction
-        // 2. Calculate their storage slots
-        // 3. Check state changes for each slot
+    // Check that supply operation maintains healthy positions
+    function assertionSupply() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(morpho), morpho.supply.selector);
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            (uint256 marketId,) = abi.decode(callInputs[i].input, (uint256, uint256));
+            address user = callInputs[i].caller;
 
-        // Example: Check a specific position (in practice you'd need to track affected positions)
-        uint256 id = 1; // Example ID
-        address borrower = address(0x123); // Example borrower
+            IMorpho.MarketParams memory marketParams = morpho.idToMarketParams(marketId);
 
-        // Get state changes for the position using the mapping accessor
-        bytes32[] memory changes = getStateChangesBytes32(
-            address(morpho),
-            POSITION_MAPPING_SLOT,
-            id,
-            0 // No additional offset needed for the first level
-        );
+            require(morpho._isHealthy(marketParams, marketId, user), "Supply operation resulted in unhealthy position");
+        }
+    }
 
-        // If there were changes to this position, verify it's still healthy
-        if (changes.length > 0) {
-            IMorpho.MarketParams memory marketParams = IMorpho.MarketParams({marketId: id});
-            require(morpho._isHealthy(marketParams, id, borrower), "Health factor is not healthy");
+    // Check that borrow operation maintains healthy positions
+    function assertionBorrow() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(morpho), morpho.borrow.selector);
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            (uint256 marketId,) = abi.decode(callInputs[i].input, (uint256, uint256));
+            address user = callInputs[i].caller;
+
+            IMorpho.MarketParams memory marketParams = morpho.idToMarketParams(marketId);
+
+            require(morpho._isHealthy(marketParams, marketId, user), "Borrow operation resulted in unhealthy position");
+        }
+    }
+
+    // Check that withdraw operation maintains healthy positions
+    function assertionWithdraw() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(morpho), morpho.withdraw.selector);
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            (uint256 marketId,) = abi.decode(callInputs[i].input, (uint256, uint256));
+            address user = callInputs[i].caller;
+
+            IMorpho.MarketParams memory marketParams = morpho.idToMarketParams(marketId);
+
+            require(
+                morpho._isHealthy(marketParams, marketId, user), "Withdraw operation resulted in unhealthy position"
+            );
+        }
+    }
+
+    // Check that repay operation maintains healthy positions
+    function assertionRepay() external {
+        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(morpho), morpho.repay.selector);
+        for (uint256 i = 0; i < callInputs.length; i++) {
+            (uint256 marketId,) = abi.decode(callInputs[i].input, (uint256, uint256));
+            address user = callInputs[i].caller;
+
+            IMorpho.MarketParams memory marketParams = morpho.idToMarketParams(marketId);
+
+            require(morpho._isHealthy(marketParams, marketId, user), "Repay operation resulted in unhealthy position");
         }
     }
 }
