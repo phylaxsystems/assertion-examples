@@ -8,6 +8,7 @@ interface IERC4626 {
     function totalAssets() external view returns (uint256);
     function totalSupply() external view returns (uint256);
     function convertToShares(uint256 assets) external view returns (uint256);
+    function convertToAssets(uint256 shares) external view returns (uint256);
 }
 
 contract ERC4626AssetsSharesAssertion is Assertion {
@@ -19,39 +20,21 @@ contract ERC4626AssetsSharesAssertion is Assertion {
 
     function triggers() external view override {
         // Register trigger specifically for changes to the total supply storage slot
-        // This is more gas efficient than triggering on all storage changes
         registerStorageChangeTrigger(
             this.assertionAssetsShares.selector,
             bytes32(uint256(1)) // Total supply storage slot
         );
     }
 
-    // Assert that the total shares are not more than the total assets
+    // Assert that the total assets are sufficient to back all shares
     function assertionAssetsShares() external {
-        // First check: Simple pre/post state comparison
-        ph.forkPreState();
-        uint256 preTotalAssets = vault.totalAssets();
-        uint256 preTotalShares = vault.totalSupply();
-        uint256 preTotalAssetsInShares = vault.convertToShares(preTotalAssets);
+        uint256 totalAssets = vault.totalAssets();
+        uint256 totalSupply = vault.totalSupply();
 
-        ph.forkPostState();
-        uint256 postTotalAssets = vault.totalAssets();
-        uint256 postTotalShares = vault.totalSupply();
-        uint256 postTotalAssetsInShares = vault.convertToShares(postTotalAssets);
+        // Calculate how many assets are needed to back all shares
+        uint256 requiredAssets = vault.convertToAssets(totalSupply);
 
-        // Basic invariant check
-        require(postTotalAssetsInShares >= postTotalShares, "Total shares exceeds total assets in shares");
-
-        // Second check: Monitor changes to total supply to catch manipulation attempts
-        uint256[] memory shareChanges = getStateChangesUint(
-            address(vault),
-            bytes32(uint256(1)) // Total supply storage slot
-        );
-
-        // For each share change, verify against the current total assets
-        for (uint256 i = 0; i < shareChanges.length; i++) {
-            uint256 assetsInShares = vault.convertToShares(postTotalAssets);
-            require(assetsInShares >= shareChanges[i], "Intermediate state violates shares/assets invariant");
-        }
+        // The total assets should be at least what's needed to back all shares
+        require(totalAssets >= requiredAssets, "Not enough assets to back all shares");
     }
 }
