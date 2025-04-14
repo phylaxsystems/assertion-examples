@@ -6,12 +6,14 @@ import {PhEvm} from "credible-std/PhEvm.sol";
 
 interface IGovernance {
     struct Timelock {
-        address admin;
         uint256 timelockDelay;
         bool isActive;
     }
 
-    function timelock() external view returns (Timelock memory);
+    function timelockActive() external view returns (bool);
+    function timelockDelay() external view returns (uint256);
+    function activateTimelock() external;
+    function setTimelock(uint256 _delay) external;
 }
 
 contract TimelockVerificationAssertion is Assertion {
@@ -30,8 +32,7 @@ contract TimelockVerificationAssertion is Assertion {
     function assertionTimelock() external {
         // Get pre-state timelock information
         ph.forkPreState();
-        address preAdmin = governance.timelock().admin;
-        bool preActive = governance.timelock().isActive;
+        bool preActive = governance.timelockActive();
 
         // If timelock was already active, no need to check further
         if (preActive) {
@@ -42,16 +43,13 @@ contract TimelockVerificationAssertion is Assertion {
         ph.forkPostState();
 
         // If timelock is now active, verify all parameters
-        if (governance.timelock().isActive) {
+        if (governance.timelockActive()) {
             // Verify timelock delay is within acceptable bounds
-            bool minDelayCorrect = governance.timelock().timelockDelay >= 1 days;
-            bool maxDelayCorrect = governance.timelock().timelockDelay <= 2 weeks;
-
-            // Verify admin hasn't changed
-            bool adminCorrect = governance.timelock().admin == preAdmin;
+            bool minDelayCorrect = governance.timelockDelay() >= 1 days;
+            bool maxDelayCorrect = governance.timelockDelay() <= 2 weeks;
 
             // Require all parameters to be correct
-            require(minDelayCorrect && maxDelayCorrect && adminCorrect, "Timelock parameters invalid");
+            require(minDelayCorrect && maxDelayCorrect, "Timelock parameters invalid");
         }
     }
 }
