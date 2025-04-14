@@ -18,6 +18,7 @@ contract TwapDeviationAssertion is Assertion {
 
     function triggers() external view override {
         // Register trigger for changes to the current price
+        // We assume that the price is stored in storage slot 0
         registerStorageChangeTrigger(this.assertionTwapDeviation.selector, bytes32(uint256(0)));
     }
 

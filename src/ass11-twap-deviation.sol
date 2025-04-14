@@ -3,27 +3,22 @@ pragma solidity ^0.8.13;
 
 /**
  * @title Pool Contract
- * @notice This contract simulates a liquidity pool with price and TWAP functionality
- * @dev Contains storage and functions for current price and time-weighted average price
+ * @notice A simple pool contract that tracks price and TWAP for testing the TwapDeviation assertion
+ * @dev Implements the IPool interface for testing the TwapDeviationAssertion
  */
 contract Pool {
     // Storage slot 0: current price
     uint256 private _price;
-
-    // Storage for TWAP calculation
-    uint256 private _twapPrice;
-    uint256 private _lastUpdated;
-    uint256 private _cumulativePrice;
+    // Storage slot 1: TWAP price
+    uint256 private _twap;
 
     /**
      * @notice Constructor that sets the initial price and TWAP
-     * @param initialPrice The initial price
+     * @param initialPrice The initial price and TWAP value
      */
     constructor(uint256 initialPrice) {
         _price = initialPrice;
-        _twapPrice = initialPrice;
-        _lastUpdated = block.timestamp;
-        _cumulativePrice = initialPrice;
+        _twap = initialPrice;
     }
 
     /**
@@ -35,43 +30,18 @@ contract Pool {
     }
 
     /**
-     * @notice Returns the time-weighted average price
+     * @notice Returns the TWAP price
      * @return The TWAP price
      */
     function twap() external view returns (uint256) {
-        return _twapPrice;
+        return _twap;
     }
 
     /**
-     * @notice Updates the price and recalculates TWAP
-     * @param newPrice The new price to set
-     */
-    function setPrice(uint256 newPrice) external {
-        // Update the cumulative price calculation
-        uint256 timeElapsed = block.timestamp - _lastUpdated;
-        _cumulativePrice += _price * timeElapsed;
-
-        // Set the new price
-        _price = newPrice;
-
-        // Update TWAP calculation
-        _lastUpdated = block.timestamp;
-        _twapPrice = _cumulativePrice / _lastUpdated; // Simplified TWAP calculation
-    }
-
-    /**
-     * @notice Sets the price without updating TWAP (for testing)
-     * @param newPrice The new price to set
+     * @notice Sets the price without updating the TWAP
+     * @param newPrice The new price value
      */
     function setPriceWithoutTwapUpdate(uint256 newPrice) external {
         _price = newPrice;
-    }
-
-    /**
-     * @notice Directly sets the TWAP value (for testing)
-     * @param newTwap The new TWAP value
-     */
-    function setTwap(uint256 newTwap) external {
-        _twapPrice = newTwap;
     }
 }
