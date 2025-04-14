@@ -22,10 +22,10 @@ contract PositionSumAssertion is Assertion {
 
     function triggers() external view override {
         // Register trigger for changes to the total supply
-        registerStorageChangeTrigger(this.assertionPositionsSum.selector, bytes32(uint256(0)));
+        registerCallTrigger(this.assertionPositionsSum.selector, lending.deposit.selector);
     }
 
-    // Compare the sum of all positions to the total supply reported by the protocol
+    // Compare the sum of all updated positions to the total supply reported by the protocol
     function assertionPositionsSum() external {
         // Capture the pre-state total supply
         ph.forkPreState();
@@ -38,10 +38,10 @@ contract PositionSumAssertion is Assertion {
         uint256 newTotalSupply = lending.totalSupply();
 
         // Calculate the expected change in total supply
-        int256 expectedTotalSupplyChange = int256(newTotalSupply) - int256(preStateTotalSupply);
+        uint256 expectedTotalSupplyChange = newTotalSupply - preStateTotalSupply;
 
         // Track the actual sum of position changes
-        int256 positionChangesSum = 0;
+        uint256 positionChangesSum = 0;
 
         // Get deposit function call inputs
         PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(lending), lending.deposit.selector);
@@ -52,7 +52,7 @@ contract PositionSumAssertion is Assertion {
             (address user, uint256 amount) = abi.decode(callInputs[i].input, (address, uint256));
 
             // Add the deposit amount to the position changes sum
-            positionChangesSum += int256(amount);
+            positionChangesSum += amount;
         }
 
         // Note: In a complete implementation, you would also check for withdraw calls
