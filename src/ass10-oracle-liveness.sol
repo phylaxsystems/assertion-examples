@@ -3,69 +3,64 @@ pragma solidity ^0.8.13;
 
 /**
  * @title Oracle Contract
- * @notice This contract simulates an oracle with a lastUpdated timestamp
- * @dev Contains functionality to get/set the last update time
+ * @notice This contract tracks the last update time of oracle data
+ * @dev Implements the IOracle interface for testing the OracleLivenessAssertion
  */
 contract Oracle {
-    // Time when the oracle was last updated
+    // Storage slot 0: last update timestamp
     uint256 private _lastUpdated;
 
     /**
-     * @notice Constructor that sets the initial lastUpdated timestamp
-     * @param initialTimestamp The initial lastUpdated timestamp
+     * @notice Constructor that sets the initial last update time
+     * @param initialLastUpdated The initial last update timestamp
      */
-    constructor(uint256 initialTimestamp) {
-        _lastUpdated = initialTimestamp;
+    constructor(uint256 initialLastUpdated) {
+        _lastUpdated = initialLastUpdated;
     }
 
     /**
-     * @notice Returns the last updated timestamp
-     * @return The timestamp when the oracle was last updated
+     * @notice Returns the last update timestamp
+     * @return The last update timestamp
      */
     function lastUpdated() external view returns (uint256) {
         return _lastUpdated;
     }
 
     /**
-     * @notice Updates the lastUpdated timestamp to the current block timestamp
+     * @notice Sets the last update timestamp
+     * @param newLastUpdated The new last update timestamp
      */
-    function update() external {
-        _lastUpdated = block.timestamp;
-    }
-
-    /**
-     * @notice Updates the lastUpdated timestamp to a specific value (for testing)
-     * @param timestamp The timestamp to set as lastUpdated
-     */
-    function setLastUpdated(uint256 timestamp) external {
-        _lastUpdated = timestamp;
+    function setLastUpdated(uint256 newLastUpdated) external {
+        _lastUpdated = newLastUpdated;
     }
 }
 
 /**
- * @title DEX Contract
- * @notice This contract simulates a DEX with swap functionality that depends on oracle data
+ * @title Dex Contract
+ * @notice This contract implements a simple DEX that uses oracle data
+ * @dev Implements the IDex interface for testing the OracleLivenessAssertion
  */
 contract Dex {
-    Oracle private _oracle;
+    Oracle public oracle;
 
     /**
      * @notice Constructor that sets the oracle address
-     * @param oracle The oracle contract address
+     * @param _oracle The address of the oracle contract
      */
-    constructor(address oracle) {
-        _oracle = Oracle(oracle);
+    constructor(address _oracle) {
+        oracle = Oracle(_oracle);
     }
 
     /**
-     * @notice Simulates a swap operation that depends on fresh oracle data
+     * @notice Performs a token swap
      * @param tokenIn The address of the input token
      * @param tokenOut The address of the output token
-     * @param amountIn The amount of input tokens to swap
+     * @param amountIn The amount of input tokens
      * @return The amount of output tokens received
      */
     function swap(address tokenIn, address tokenOut, uint256 amountIn) external returns (uint256) {
-        // In a real implementation, this would check oracle data and calculate amounts
-        return amountIn; // Simplified return for testing
+        // In a real implementation, this would use the oracle data to calculate the swap
+        // For testing purposes, we just return the input amount
+        return amountIn;
     }
 }

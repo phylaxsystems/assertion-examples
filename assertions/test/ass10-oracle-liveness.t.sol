@@ -16,11 +16,14 @@ contract TestOracleLiveness is CredibleTest, Test {
     address public tokenA = address(0xaaa);
     address public tokenB = address(0xbbb);
     uint256 public swapAmount = 1e18;
+    address public user = address(0x1234);
 
     function setUp() public {
         // Initialize with oracle data that is fresh
         oracle = new Oracle(block.timestamp);
         dex = new Dex(address(oracle));
+        // Give the user some ETH
+        vm.deal(user, 100 ether);
     }
 
     function test_assertionOracleFresh() public {
@@ -30,6 +33,8 @@ contract TestOracleLiveness is CredibleTest, Test {
         // Associate the assertion with the DEX
         cl.addAssertion(label, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex));
 
+        // Set user as the caller
+        vm.prank(user);
         // This should pass because the oracle data is fresh
         cl.validate(label, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount)));
     }
@@ -38,12 +43,14 @@ contract TestOracleLiveness is CredibleTest, Test {
         address dexAddress = address(dex);
         string memory label = "Oracle is stale";
 
-        // Set oracle data to be stale (older than MAX_UPDATE_WINDOW)
-        oracle.setLastUpdated(block.timestamp - MAX_UPDATE_WINDOW - 1);
+        // Fast forward time to make oracle data stale
+        vm.warp(block.timestamp + MAX_UPDATE_WINDOW + 1);
 
         // Associate the assertion with the DEX
         cl.addAssertion(label, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex));
 
+        // Set user as the caller
+        vm.prank(user);
         // This should revert because the oracle data is stale
         vm.expectRevert("Assertions Reverted");
         cl.validate(label, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount)));
