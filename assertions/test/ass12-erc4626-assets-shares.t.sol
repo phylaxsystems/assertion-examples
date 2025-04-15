@@ -8,10 +8,11 @@ import {ERC4626AssetsSharesAssertion} from "../src/ass12-erc4626-assets-shares.a
 
 contract TestERC4626AssetsShares is CredibleTest, Test {
     ERC4626Vault public protocol;
+    address public asset = address(0xdead);
     address public user = address(0x1234);
 
     function setUp() public {
-        protocol = new ERC4626Vault();
+        protocol = new ERC4626Vault(asset);
         vm.deal(user, 100 ether);
 
         // Set up a valid initial state with 100 assets and 100 shares

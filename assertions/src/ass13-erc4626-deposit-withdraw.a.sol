@@ -35,8 +35,6 @@ contract ERC4626DepositWithdrawAssertion is Assertion {
 
     constructor(address _erc4626) {
         erc4626 = IERC4626(_erc4626);
-        // Initialize with current share value
-        lastKnownShareValue = _calculateAssetsPerShare();
     }
 
     function triggers() external view override {
