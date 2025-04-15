@@ -7,7 +7,7 @@ import {PhEvm} from "credible-std/PhEvm.sol";
 interface IBeefyVault {
     function balance() external view returns (uint256);
     function getPricePerFullShare() external view returns (uint256);
-    function harvest() external;
+    function harvest(bool badHarvest) external;
 }
 
 // Inspired by https://github.com/beefyfinance/beefy-contracts/blob/master/forge/test/vault/ChainVaultsTest.t.sol#L77-L110
