@@ -40,7 +40,7 @@ contract EmergencyStateAssertion is Assertion {
             // Additional check: verify no unauthorized state changes
             uint256[] memory changes = getStateChangesUint(
                 address(vault),
-                bytes32(uint256(1)) // Balance storage slot
+                bytes32(uint256(1)) // Balance storage slot, change according to your contract
             );
 
             // Ensure all intermediate states maintain the decrease-only property
