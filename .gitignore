@@ -1,1 +1,6 @@
 .prettierrc
+
+# Bin
+bin/
+cache/
+out/
