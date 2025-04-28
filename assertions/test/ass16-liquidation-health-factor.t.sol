@@ -12,6 +12,7 @@ contract TestLiquidationHealthFactor is CredibleTest, Test {
     address public borrower = address(0x1234);
     address public liquidator = address(0x5678);
     uint256 public marketId = 1;
+    string constant ASSERTION_LABEL = "LiquidationHealthFactorAssertion";
 
     // For setting health factors and liquidation parameters
     uint256 constant UNSAFE_HEALTH_FACTOR = 0.9e18; // Below liquidation threshold
@@ -37,14 +38,13 @@ contract TestLiquidationHealthFactor is CredibleTest, Test {
 
     function test_assertionLiquidationNotEligible() public {
         address protocolAddress = address(protocol);
-        string memory label = "Liquidation not eligible - health factor above threshold";
 
         // Set borrower's health factor to a safe value
         protocol.setHealthFactor(marketParams, borrower, SAFE_HEALTH_FACTOR);
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(LiquidationHealthFactorAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(LiquidationHealthFactorAssertion).creationCode, abi.encode(protocol)
         );
 
         // Prepare liquidation call data
@@ -57,19 +57,18 @@ contract TestLiquidationHealthFactor is CredibleTest, Test {
 
         // This should fail the assertion because the position is already healthy
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, liquidateCalldata);
+        cl.validate(ASSERTION_LABEL, protocolAddress, 0, liquidateCalldata);
     }
 
     function test_assertionLiquidationEligible() public {
         address protocolAddress = address(protocol);
-        string memory label = "Liquidation eligible - health factor below threshold";
 
         // Set borrower's health factor to an unsafe value
         protocol.setHealthFactor(marketParams, borrower, UNSAFE_HEALTH_FACTOR);
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(LiquidationHealthFactorAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(LiquidationHealthFactorAssertion).creationCode, abi.encode(protocol)
         );
 
         // Prepare liquidation call data
@@ -81,19 +80,18 @@ contract TestLiquidationHealthFactor is CredibleTest, Test {
         vm.prank(liquidator);
 
         // This should pass as the position is unhealthy and liquidation improves the health factor
-        cl.validate(label, protocolAddress, 0, liquidateCalldata);
+        cl.validate(ASSERTION_LABEL, protocolAddress, 0, liquidateCalldata);
     }
 
     function test_assertionLiquidationNoImprovement() public {
         address protocolAddress = address(protocol);
-        string memory label = "Liquidation with no health factor improvement";
 
         // Set borrower's health factor to an unsafe value
         protocol.setHealthFactor(marketParams, borrower, UNSAFE_HEALTH_FACTOR);
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(LiquidationHealthFactorAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(LiquidationHealthFactorAssertion).creationCode, abi.encode(protocol)
         );
 
         // Prepare liquidation call data with small repaid amount that won't improve health factor
@@ -107,6 +105,6 @@ contract TestLiquidationHealthFactor is CredibleTest, Test {
 
         // This should revert as the health factor won't improve enough
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, liquidateCalldata);
+        cl.validate(ASSERTION_LABEL, protocolAddress, 0, liquidateCalldata);
     }
 }

@@ -13,6 +13,7 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
     string public testUsername = "testUser";
     string public existingUsername = "existingUser";
     address public existingUserAddress = address(0xbeef);
+    string constant ASSERTION_LABEL = "FarcasterProtocolAssertion";
 
     // Message variables
     Farcaster.Message validMessage;
@@ -57,10 +58,11 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
 
     function test_assertionMessageValidity() public {
         address protocolAddress = address(protocol);
-        string memory label = "Message validity check";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Add time to avoid rate limit issues
         vm.warp(block.timestamp + 2 minutes);
@@ -69,16 +71,20 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         // This should revert because the message is invalid
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.postMessage.selector, abi.encode(invalidMessage))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.postMessage.selector, abi.encode(invalidMessage))
         );
     }
 
     function test_assertionValidMessage() public {
         address protocolAddress = address(protocol);
-        string memory label = "Valid message passing";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Set the timestamp to a future time to avoid rate limit violations
         // The assertion checks that current timestamp is >= lastPostTime + POST_COOLDOWN
@@ -87,45 +93,57 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         vm.prank(user);
         // This should pass because the message is valid
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.postMessage.selector, abi.encode(validMessage))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.postMessage.selector, abi.encode(validMessage))
         );
     }
 
     function test_assertionUsernameUniqueness() public {
         address protocolAddress = address(protocol);
-        string memory label = "Username uniqueness check";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol)
+        );
 
         vm.prank(user);
         // This should revert because the username is already registered
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.register.selector, abi.encode(existingUsername, user))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.register.selector, abi.encode(existingUsername, user))
         );
     }
 
     function test_assertionNewUsername() public {
         address protocolAddress = address(protocol);
-        string memory label = "New username registration";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol)
+        );
 
         vm.prank(user);
         // This should pass because it's a new username
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.register.selector, abi.encode(testUsername, user))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.register.selector, abi.encode(testUsername, user))
         );
     }
 
     function test_assertionRateLimit() public {
         address protocolAddress = address(protocol);
-        string memory label = "Rate limit check";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Add time to avoid initial rate limit issues
         vm.warp(block.timestamp + 2 minutes);
@@ -141,16 +159,20 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         // This should revert because we're posting too quickly
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.postMessage.selector, abi.encode(messageForRateLimit))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.postMessage.selector, abi.encode(messageForRateLimit))
         );
     }
 
     function test_assertionRateLimitPassing() public {
         address protocolAddress = address(protocol);
-        string memory label = "Rate limit passing";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(FarcasterProtocolAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Add time to avoid initial rate limit issues
         vm.warp(block.timestamp + 2 minutes);
@@ -165,7 +187,10 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         vm.prank(user);
         // This should pass because we've waited long enough
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.postMessage.selector, abi.encode(messageForRateLimit))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.postMessage.selector, abi.encode(messageForRateLimit))
         );
     }
 }
