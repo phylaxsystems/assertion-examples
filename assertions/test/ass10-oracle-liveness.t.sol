@@ -10,6 +10,7 @@ contract TestOracleLiveness is CredibleTest, Test {
     // Contract state variables
     Oracle public oracle;
     Dex public dex;
+    string constant ASSERTION_LABEL = "OracleLivenessAssertion";
 
     // Constants for testing
     uint256 public constant MAX_UPDATE_WINDOW = 10 minutes;
@@ -28,31 +29,37 @@ contract TestOracleLiveness is CredibleTest, Test {
 
     function test_assertionOracleFresh() public {
         address dexAddress = address(dex);
-        string memory label = "Oracle is fresh";
 
         // Associate the assertion with the DEX
-        cl.addAssertion(label, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex));
+        cl.addAssertion(
+            ASSERTION_LABEL, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex)
+        );
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because the oracle data is fresh
-        cl.validate(label, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount)));
+        cl.validate(
+            ASSERTION_LABEL, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount))
+        );
     }
 
     function test_assertionOracleStale() public {
         address dexAddress = address(dex);
-        string memory label = "Oracle is stale";
 
         // Fast forward time to make oracle data stale
         vm.warp(block.timestamp + MAX_UPDATE_WINDOW + 1);
 
         // Associate the assertion with the DEX
-        cl.addAssertion(label, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex));
+        cl.addAssertion(
+            ASSERTION_LABEL, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex)
+        );
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because the oracle data is stale
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount)));
+        cl.validate(
+            ASSERTION_LABEL, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount))
+        );
     }
 }

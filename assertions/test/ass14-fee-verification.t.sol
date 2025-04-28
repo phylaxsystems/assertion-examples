@@ -10,6 +10,7 @@ contract TestFeeVerification is CredibleTest, Test {
     // Contract state variables
     Pool public protocol;
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "AmmFeeVerificationAssertion";
 
     // Fee constants
     uint256 private constant STABLE_POOL_FEE_1 = 1; // 0.1%
@@ -26,46 +27,55 @@ contract TestFeeVerification is CredibleTest, Test {
 
     function test_validFeeChangeStable() public {
         address protocolAddress = address(protocol);
-        string memory label = "Fee verification for stable pool";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         vm.prank(user);
         // This should pass because we're setting a valid fee for stable pools
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.setFee.selector, abi.encode(STABLE_POOL_FEE_2))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.setFee.selector, abi.encode(STABLE_POOL_FEE_2))
         );
     }
 
     function test_invalidFeeChangeStable() public {
         address protocolAddress = address(protocol);
-        string memory label = "Fee verification for stable pool";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         vm.prank(user);
         // This should revert because we're setting an invalid fee for stable pools
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setFee.selector, abi.encode(INVALID_FEE)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setFee.selector, abi.encode(INVALID_FEE))
+        );
     }
 
     function test_validFeeChangeNonStable() public {
         // Create a non-stable pool
         Pool nonStableProtocol = new Pool(NON_STABLE_POOL_FEE_1, false);
         address protocolAddress = address(nonStableProtocol);
-        string memory label = "Fee verification for non-stable pool";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(nonStableProtocol)
+            ASSERTION_LABEL,
+            protocolAddress,
+            type(AmmFeeVerificationAssertion).creationCode,
+            abi.encode(nonStableProtocol)
         );
 
         vm.prank(user);
         // This should pass because we're setting a valid fee for non-stable pools
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             protocolAddress,
             0,
             abi.encodePacked(nonStableProtocol.setFee.selector, abi.encode(NON_STABLE_POOL_FEE_2))
@@ -76,18 +86,20 @@ contract TestFeeVerification is CredibleTest, Test {
         // Create a non-stable pool
         Pool nonStableProtocol = new Pool(NON_STABLE_POOL_FEE_1, false);
         address protocolAddress = address(nonStableProtocol);
-        string memory label = "Fee verification for non-stable pool";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(nonStableProtocol)
+            ASSERTION_LABEL,
+            protocolAddress,
+            type(AmmFeeVerificationAssertion).creationCode,
+            abi.encode(nonStableProtocol)
         );
 
         vm.prank(user);
         // This should revert because we're setting an invalid fee for non-stable pools
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             protocolAddress,
             0,
             abi.encodePacked(nonStableProtocol.setFee.selector, abi.encode(STABLE_POOL_FEE_1))
@@ -96,10 +108,11 @@ contract TestFeeVerification is CredibleTest, Test {
 
     function test_batchFeeChanges() public {
         address protocolAddress = address(protocol);
-        string memory label = "Batch fee changes";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Create a batch fee changer that will make multiple fee changes
         BatchFeeChanges batchChanger = new BatchFeeChanges(address(protocol));
@@ -107,7 +120,7 @@ contract TestFeeVerification is CredibleTest, Test {
         // Execute the batch fee changes
         vm.prank(user);
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             address(batchChanger),
             0,
             new bytes(0) // Empty calldata triggers fallback
@@ -116,10 +129,11 @@ contract TestFeeVerification is CredibleTest, Test {
 
     function test_batchFeeChangesWithInvalid() public {
         address protocolAddress = address(protocol);
-        string memory label = "Batch fee changes with invalid";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Create a batch fee changer that will include an invalid fee change
         BatchFeeChangesWithInvalid batchChanger = new BatchFeeChangesWithInvalid(address(protocol));
@@ -128,7 +142,7 @@ contract TestFeeVerification is CredibleTest, Test {
         vm.prank(user);
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             address(batchChanger),
             0,
             new bytes(0) // Empty calldata triggers fallback

@@ -11,6 +11,7 @@ contract TestERC20Drain is CredibleTest, Test {
     TokenVault public protocol;
     MockERC20 public token;
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "ERC20DrainAssertion";
 
     // Constants for token supplies and transfers
     uint256 public constant INITIAL_SUPPLY = 1000000 ether;
@@ -37,28 +38,35 @@ contract TestERC20Drain is CredibleTest, Test {
 
     function test_assertionDrainWithinLimit() public {
         address protocolAddress = address(protocol);
-        string memory label = "ERC20 drain within limit";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(ERC20DrainAssertion).creationCode, abi.encode(address(token), protocolAddress)
+            ASSERTION_LABEL,
+            protocolAddress,
+            type(ERC20DrainAssertion).creationCode,
+            abi.encode(address(token), protocolAddress)
         );
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because we're withdrawing less than 10% of balance
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.withdraw.selector, abi.encode(user, SMALL_WITHDRAWAL))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.withdraw.selector, abi.encode(user, SMALL_WITHDRAWAL))
         );
     }
 
     function test_assertionDrainExceedsLimit() public {
         address protocolAddress = address(protocol);
-        string memory label = "ERC20 drain exceeds limit";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(ERC20DrainAssertion).creationCode, abi.encode(address(token), protocolAddress)
+            ASSERTION_LABEL,
+            protocolAddress,
+            type(ERC20DrainAssertion).creationCode,
+            abi.encode(address(token), protocolAddress)
         );
 
         // Set user as the caller
@@ -66,24 +74,32 @@ contract TestERC20Drain is CredibleTest, Test {
         // This should revert because we're withdrawing more than 10% of balance
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.withdraw.selector, abi.encode(user, LARGE_WITHDRAWAL))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.withdraw.selector, abi.encode(user, LARGE_WITHDRAWAL))
         );
     }
 
     function test_assertionDepositDoesNotRevert() public {
         address protocolAddress = address(protocol);
-        string memory label = "ERC20 deposit";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(ERC20DrainAssertion).creationCode, abi.encode(address(token), protocolAddress)
+            ASSERTION_LABEL,
+            protocolAddress,
+            type(ERC20DrainAssertion).creationCode,
+            abi.encode(address(token), protocolAddress)
         );
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because we're depositing tokens, not withdrawing
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.deposit.selector, abi.encode(LARGE_WITHDRAWAL))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.deposit.selector, abi.encode(LARGE_WITHDRAWAL))
         );
     }
 }

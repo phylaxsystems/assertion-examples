@@ -9,6 +9,7 @@ import {Morpho} from "../../src/ass19-tokens-borrowed-invariant.sol";
 contract TestTokensBorrowedInvariant is CredibleTest, Test {
     Morpho public protocol;
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "TokensBorrowedInvariant";
 
     // Initial values for the protocol
     uint256 public initialSupply = 1000 ether;
@@ -22,10 +23,11 @@ contract TestTokensBorrowedInvariant is CredibleTest, Test {
 
     function test_assertionInvariantViolation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Total supply >= Total borrowed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
@@ -34,16 +36,20 @@ contract TestTokensBorrowedInvariant is CredibleTest, Test {
         uint256 newBorrowed = initialSupply + 1; // Borrowed amount exceeds supply
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(Morpho.setTotalBorrowedAsset.selector, abi.encode(newBorrowed))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(Morpho.setTotalBorrowedAsset.selector, abi.encode(newBorrowed))
         );
     }
 
     function test_assertionInvariantMaintained() public {
         address protocolAddress = address(protocol);
-        string memory label = "Total supply >= Total borrowed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
@@ -51,16 +57,20 @@ contract TestTokensBorrowedInvariant is CredibleTest, Test {
         // This should pass because borrowed remains <= supply
         uint256 newBorrowed = initialSupply; // Borrowed equals supply (edge case, but still valid)
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(Morpho.setTotalBorrowedAsset.selector, abi.encode(newBorrowed))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(Morpho.setTotalBorrowedAsset.selector, abi.encode(newBorrowed))
         );
     }
 
     function test_assertionBorrowViolation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Borrow exceeds supply";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
@@ -68,15 +78,18 @@ contract TestTokensBorrowedInvariant is CredibleTest, Test {
         // This should revert because borrowing too much violates the invariant
         uint256 borrowAmount = initialSupply - initialBorrowed + 1; // Would make borrowed > supply
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(Morpho.borrow.selector, abi.encode(borrowAmount)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(Morpho.borrow.selector, abi.encode(borrowAmount))
+        );
     }
 
     function test_assertionWithdrawViolation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Withdraw reduces supply below borrowed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
@@ -84,36 +97,44 @@ contract TestTokensBorrowedInvariant is CredibleTest, Test {
         // This should revert because withdrawing too much violates the invariant
         uint256 withdrawAmount = initialSupply - initialBorrowed + 1; // Would make supply < borrowed
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(Morpho.withdraw.selector, abi.encode(withdrawAmount)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(Morpho.withdraw.selector, abi.encode(withdrawAmount))
+        );
     }
 
     function test_assertionSupply() public {
         address protocolAddress = address(protocol);
-        string memory label = "Supply maintains invariant";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
 
         // This should pass because supplying more assets maintains the invariant
         uint256 supplyAmount = 100 ether;
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(Morpho.supply.selector, abi.encode(supplyAmount)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(Morpho.supply.selector, abi.encode(supplyAmount))
+        );
     }
 
     function test_assertionRepay() public {
         address protocolAddress = address(protocol);
-        string memory label = "Repay maintains invariant";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TokensBorrowedInvariant).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
 
         // This should pass because repaying borrowed assets maintains the invariant
         uint256 repayAmount = 100 ether;
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(Morpho.repay.selector, abi.encode(repayAmount)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(Morpho.repay.selector, abi.encode(repayAmount))
+        );
     }
 }

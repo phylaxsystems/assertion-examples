@@ -10,6 +10,7 @@ contract TestTwapDeviation is CredibleTest, Test {
     // Contract state variables
     Pool public protocol;
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "TwapDeviationAssertion";
 
     // Test constants
     uint256 public initialPrice = 1000e18; // $1000
@@ -23,16 +24,17 @@ contract TestTwapDeviation is CredibleTest, Test {
 
     function test_assertionSmallDeviation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Small price deviation";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because the price deviation is within 5%
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             protocolAddress,
             0,
             abi.encodePacked(protocol.setPriceWithoutTwapUpdate.selector, abi.encode(smallDeviation))
@@ -41,17 +43,18 @@ contract TestTwapDeviation is CredibleTest, Test {
 
     function test_assertionLargeDeviation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Large price deviation";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because the price deviation exceeds 5%
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             protocolAddress,
             0,
             abi.encodePacked(protocol.setPriceWithoutTwapUpdate.selector, abi.encode(largeDeviation))
@@ -60,10 +63,11 @@ contract TestTwapDeviation is CredibleTest, Test {
 
     function test_assertionMultiplePriceUpdates() public {
         address protocolAddress = address(protocol);
-        string memory label = "Multiple price updates";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Create a batch updater that will make multiple price updates
         BatchPriceUpdates batchUpdater = new BatchPriceUpdates(address(protocol));
@@ -71,7 +75,7 @@ contract TestTwapDeviation is CredibleTest, Test {
         // Execute the batch updates
         vm.prank(user);
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             address(batchUpdater),
             0,
             new bytes(0) // Empty calldata triggers fallback
@@ -80,10 +84,11 @@ contract TestTwapDeviation is CredibleTest, Test {
 
     function test_assertionMultiplePriceUpdatesWithInvalid() public {
         address protocolAddress = address(protocol);
-        string memory label = "Multiple price updates with invalid";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Create a batch updater that will make multiple price updates
         InvalidBatchPriceUpdates batchUpdater = new InvalidBatchPriceUpdates(address(protocol));
@@ -92,7 +97,7 @@ contract TestTwapDeviation is CredibleTest, Test {
         vm.prank(user);
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             address(batchUpdater),
             0,
             new bytes(0) // Empty calldata triggers fallback

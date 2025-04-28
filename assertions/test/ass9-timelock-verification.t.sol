@@ -9,6 +9,7 @@ import {TimelockVerificationAssertion} from "../src/ass9-timelock-verification.a
 contract TestTimelockVerification is CredibleTest, Test {
     TimelockVerification public protocol;
     address public user = address(0xbeef);
+    string constant ASSERTION_LABEL = "TimelockVerificationAssertion";
 
     function setUp() public {
         protocol = new TimelockVerification();
@@ -17,35 +18,42 @@ contract TestTimelockVerification is CredibleTest, Test {
 
     function test_assertionTimelockInvalidDelay() public {
         address protocolAddress = address(protocol);
-        string memory label = "Timelock delay invalid";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TimelockVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TimelockVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         vm.prank(user);
         // This should revert because delay is too short
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setTimelock.selector, abi.encode(12 hours)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setTimelock.selector, abi.encode(12 hours))
+        );
     }
 
     function test_assertionTimelockValidDelay() public {
         address protocolAddress = address(protocol);
-        string memory label = "Timelock delay valid";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TimelockVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TimelockVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         vm.prank(user);
         // This should pass because delay is within bounds
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setTimelock.selector, abi.encode(1 days)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setTimelock.selector, abi.encode(1 days))
+        );
     }
 
     function test_assertionTimelockAlreadyActive() public {
         address protocolAddress = address(protocol);
-        string memory label = "Timelock already active";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(TimelockVerificationAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(TimelockVerificationAssertion).creationCode, abi.encode(protocol)
+        );
 
         // First activate the timelock
         vm.prank(user);
@@ -53,6 +61,8 @@ contract TestTimelockVerification is CredibleTest, Test {
 
         // This should pass because timelock was already active and we don't care about the delay
         vm.prank(user);
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setTimelock.selector, abi.encode(2 days)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setTimelock.selector, abi.encode(2 days))
+        );
     }
 }

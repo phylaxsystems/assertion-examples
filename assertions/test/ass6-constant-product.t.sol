@@ -11,6 +11,7 @@ contract TestConstantProductAssertion is CredibleTest, Test {
     // Contract state variables
     ConstantProductAmm public protocol;
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "ConstantProductAssertion";
 
     // Initial reserves
     uint256 public initialReserve0 = 1000 ether;
@@ -37,17 +38,18 @@ contract TestConstantProductAssertion is CredibleTest, Test {
 
     function test_assertionConstantProductMaintained() public {
         address protocolAddress = address(protocol);
-        string memory label = "Constant product maintained";
 
         // Associate the assertion with the protocol
         // The assertion will trigger on changes to either reserve slot
-        cl.addAssertion(label, protocolAddress, type(ConstantProductAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(ConstantProductAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because the new reserves maintain the constant product
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             protocolAddress,
             0,
             abi.encodePacked(protocol.setReserves.selector, abi.encode(validReserve0, validReserve1))
@@ -56,19 +58,20 @@ contract TestConstantProductAssertion is CredibleTest, Test {
 
     function test_assertionConstantProductViolated() public {
         address protocolAddress = address(protocol);
-        string memory label = "Constant product violated";
 
         // Associate the assertion with the protocol
         // The assertion simply checks pre/post state since we can't reliably track
         // intra-transaction violations with current tooling
-        cl.addAssertion(label, protocolAddress, type(ConstantProductAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(
+            ASSERTION_LABEL, protocolAddress, type(ConstantProductAssertion).creationCode, abi.encode(protocol)
+        );
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because invalid reserves violate the constant product
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             protocolAddress,
             0,
             abi.encodePacked(protocol.setReserves.selector, abi.encode(newReserve0, newReserve1 + 1 ether))

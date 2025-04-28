@@ -13,6 +13,7 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
     uint256 public acceptablePrice = 1100; // 10% increase, which is acceptable
     uint256 public unacceptablePrice = 1200; // 20% increase, which exceeds threshold
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "IntraTxOracleDeviationAssertion";
 
     function setUp() public {
         protocol = new Oracle(initialPrice);
@@ -21,44 +22,47 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
 
     function test_assertionAcceptableDeviation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Oracle price deviation is acceptable";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
         );
 
         vm.prank(user);
         // This should pass because the price is within acceptable deviation (10%)
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.updatePrice.selector, abi.encode(acceptablePrice))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.updatePrice.selector, abi.encode(acceptablePrice))
         );
     }
 
     function test_assertionUnacceptableDeviation() public {
         address protocolAddress = address(protocol);
-        string memory label = "Oracle price deviation is unacceptable";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
         );
 
         vm.prank(user);
         // This should revert because the price exceeds acceptable deviation (20% > 10%)
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label, protocolAddress, 0, abi.encodePacked(protocol.updatePrice.selector, abi.encode(unacceptablePrice))
+            ASSERTION_LABEL,
+            protocolAddress,
+            0,
+            abi.encodePacked(protocol.updatePrice.selector, abi.encode(unacceptablePrice))
         );
     }
 
     function test_assertionBatchAcceptablePriceUpdates() public {
         address protocolAddress = address(protocol);
-        string memory label = "Batch acceptable price updates";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
         );
 
         // Create a batch updater with all acceptable price updates
@@ -67,7 +71,7 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
         // Execute the batch updates
         vm.prank(user);
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             address(batchUpdater),
             0,
             new bytes(0) // Empty calldata triggers fallback
@@ -76,11 +80,10 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
 
     function test_assertionBatchUnacceptablePriceUpdates() public {
         address protocolAddress = address(protocol);
-        string memory label = "Batch unacceptable price updates";
 
         // Associate the assertion with the protocol
         cl.addAssertion(
-            label, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
+            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
         );
 
         // Create a batch updater with an unacceptable price update
@@ -90,7 +93,7 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
         vm.prank(user);
         vm.expectRevert("Assertions Reverted");
         cl.validate(
-            label,
+            ASSERTION_LABEL,
             address(batchUpdater),
             0,
             new bytes(0) // Empty calldata triggers fallback

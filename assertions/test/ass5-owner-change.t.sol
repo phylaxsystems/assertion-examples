@@ -14,6 +14,7 @@ contract TestOwnerChange is CredibleTest, Test {
     address public newOwner = address(0xacab);
     address public newAdmin = address(0xcafe);
     address public user = address(0x1234);
+    string constant ASSERTION_LABEL = "OwnerChangeAssertion";
 
     function setUp() public {
         protocol = new Ownership(initialOwner, initialAdmin);
@@ -23,55 +24,59 @@ contract TestOwnerChange is CredibleTest, Test {
 
     function test_assertionOwnerChanged() public {
         address protocolAddress = address(protocol);
-        string memory label = "Owner has changed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because owner is changing
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setOwner.selector, abi.encode(newOwner)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setOwner.selector, abi.encode(newOwner))
+        );
     }
 
     function test_assertionOwnerNotChanged() public {
         address protocolAddress = address(protocol);
-        string memory label = "Owner has not changed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because we're setting the same owner
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setOwner.selector, abi.encode(initialOwner)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setOwner.selector, abi.encode(initialOwner))
+        );
     }
 
     function test_assertionAdminChanged() public {
         address protocolAddress = address(protocol);
-        string memory label = "Admin has changed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because admin is changing
         vm.expectRevert("Assertions Reverted");
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setAdmin.selector, abi.encode(newAdmin)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setAdmin.selector, abi.encode(newAdmin))
+        );
     }
 
     function test_assertionAdminNotChanged() public {
         address protocolAddress = address(protocol);
-        string memory label = "Admin has not changed";
 
         // Associate the assertion with the protocol
-        cl.addAssertion(label, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because we're setting the same admin
-        cl.validate(label, protocolAddress, 0, abi.encodePacked(protocol.setAdmin.selector, abi.encode(initialAdmin)));
+        cl.validate(
+            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setAdmin.selector, abi.encode(initialAdmin))
+        );
     }
 }
