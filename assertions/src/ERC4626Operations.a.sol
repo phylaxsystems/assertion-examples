@@ -3,8 +3,8 @@ pragma solidity ^0.8.13;
 
 import {Assertion} from "credible-std/Assertion.sol";
 import {CoolVault} from "../../src/CoolVault.sol";
-import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {PhEvm} from "credible-std/PhEvm.sol";
 
 contract ERC4626OperationsAssertion is Assertion {
@@ -18,244 +18,19 @@ contract ERC4626OperationsAssertion is Assertion {
 
     // The triggers function tells the Credible Layer which assertion functions to run
     function triggers() external view override {
-        // Deposit function assertions
-        // registerCallTrigger(
-        //     this.assertionDepositUpdatesSupplyAndAssets.selector,
-        //     coolVault.deposit.selector
-        // );
-
-        // // Mint function assertions
-        // registerCallTrigger(
-        //     this.assertionMintUpdatesSupplyAndAssets.selector,
-        //     coolVault.mint.selector
-        // );
-
-        // // Withdraw function assertions
-        // registerCallTrigger(
-        //     this.assertionWithdrawUpdatesSupplyAndAssets.selector,
-        //     coolVault.withdraw.selector
-        // );
-
-        // // Redeem function assertions
-        // registerCallTrigger(
-        //     this.assertionRedeemUpdatesSupplyAndAssets.selector,
-        //     coolVault.redeem.selector
-        // );
-
         // Batch operations assertion - triggers on any of the four functions
-        registerCallTrigger(
-            this.assertionBatchOperationsConsistency.selector,
-            coolVault.deposit.selector
-        );
-        registerCallTrigger(
-            this.assertionBatchOperationsConsistency.selector,
-            coolVault.mint.selector
-        );
-        registerCallTrigger(
-            this.assertionBatchOperationsConsistency.selector,
-            coolVault.withdraw.selector
-        );
-        registerCallTrigger(
-            this.assertionBatchOperationsConsistency.selector,
-            coolVault.redeem.selector
-        );
+        registerCallTrigger(this.assertionBatchOperationsConsistency.selector, coolVault.deposit.selector);
+        registerCallTrigger(this.assertionBatchOperationsConsistency.selector, coolVault.mint.selector);
+        registerCallTrigger(this.assertionBatchOperationsConsistency.selector, coolVault.withdraw.selector);
+        registerCallTrigger(this.assertionBatchOperationsConsistency.selector, coolVault.redeem.selector);
+
+        // Deposit-specific assertions
+        registerCallTrigger(this.assertionDepositIncreasesBalance.selector, coolVault.deposit.selector);
+        registerCallTrigger(this.assertionDepositerSharesIncreases.selector, coolVault.deposit.selector);
+
+        // Base invariant assertion - triggers on storage changes
+        registerStorageChangeTrigger(this.assertionVaultAlwaysAccumulatesAssets.selector, bytes32(uint256(2)));
     }
-
-    /**
-     * @dev Assertion for deposit function: validates that total supply and total assets are correctly updated
-     * Tests that depositing assets increases both vault's total assets and total supply proportionally
-     */
-    // function assertionDepositUpdatesSupplyAndAssets() external {
-    //     ph.forkPreState();
-
-    //     // Get pre-state values
-    //     uint256 preVaultAssets = coolVault.totalAssets();
-    //     uint256 preVaultSupply = coolVault.totalSupply();
-
-    //     // Get all deposit calls in this transaction
-    //     PhEvm.CallInputs[] memory inputs = ph.getCallInputs(
-    //         address(coolVault),
-    //         coolVault.deposit.selector
-    //     );
-
-    //     uint256 totalAssetsDeposited = 0;
-    //     uint256 totalSharesExpected = 0;
-
-    //     // Calculate expected changes from all deposit calls
-    //     for (uint256 i = 0; i < inputs.length; i++) {
-    //         (uint256 assets, ) = abi.decode(
-    //             inputs[i].input,
-    //             (uint256, address)
-    //         );
-    //         totalAssetsDeposited += assets;
-    //         totalSharesExpected += coolVault.previewDeposit(assets);
-    //     }
-
-    //     ph.forkPostState();
-
-    //     // Get post-state values
-    //     uint256 postVaultAssets = coolVault.totalAssets();
-    //     uint256 postVaultSupply = coolVault.totalSupply();
-
-    //     // Verify total assets increased correctly
-    //     require(
-    //         postVaultAssets == preVaultAssets + totalAssetsDeposited,
-    //         "Deposit: Total assets not updated correctly"
-    //     );
-
-    //     // Verify total supply increased correctly
-    //     require(
-    //         postVaultSupply == preVaultSupply + totalSharesExpected,
-    //         "Deposit: Total supply not updated correctly"
-    //     );
-    // }
-
-    // /**
-    //  * @dev Assertion for mint function: validates that total supply and total assets are correctly updated
-    //  * Tests that minting shares increases both vault's total supply and total assets proportionally
-    //  */
-    // function assertionMintUpdatesSupplyAndAssets() external {
-    //     ph.forkPreState();
-
-    //     // Get pre-state values
-    //     uint256 preVaultAssets = coolVault.totalAssets();
-    //     uint256 preVaultSupply = coolVault.totalSupply();
-
-    //     // Get all mint calls in this transaction
-    //     PhEvm.CallInputs[] memory inputs = ph.getCallInputs(
-    //         address(coolVault),
-    //         coolVault.mint.selector
-    //     );
-
-    //     uint256 totalSharesMinted = 0;
-    //     uint256 totalAssetsExpected = 0;
-
-    //     // Calculate expected changes from all mint calls
-    //     for (uint256 i = 0; i < inputs.length; i++) {
-    //         (uint256 shares, ) = abi.decode(
-    //             inputs[i].input,
-    //             (uint256, address)
-    //         );
-    //         totalSharesMinted += shares;
-    //         totalAssetsExpected += coolVault.previewMint(shares);
-    //     }
-
-    //     ph.forkPostState();
-
-    //     // Get post-state values
-    //     uint256 postVaultAssets = coolVault.totalAssets();
-    //     uint256 postVaultSupply = coolVault.totalSupply();
-
-    //     // Verify total assets increased correctly
-    //     require(
-    //         postVaultAssets == preVaultAssets + totalAssetsExpected,
-    //         "Mint: Total assets not updated correctly"
-    //     );
-
-    //     // Verify total supply increased correctly
-    //     require(
-    //         postVaultSupply == preVaultSupply + totalSharesMinted,
-    //         "Mint: Total supply not updated correctly"
-    //     );
-    // }
-
-    // /**
-    //  * @dev Assertion for withdraw function: validates that total supply and total assets are correctly updated
-    //  * Tests that withdrawing assets decreases both vault's total assets and total supply proportionally
-    //  */
-    // function assertionWithdrawUpdatesSupplyAndAssets() external {
-    //     ph.forkPreState();
-
-    //     // Get pre-state values
-    //     uint256 preVaultAssets = coolVault.totalAssets();
-    //     uint256 preVaultSupply = coolVault.totalSupply();
-
-    //     // Get all withdraw calls in this transaction
-    //     PhEvm.CallInputs[] memory inputs = ph.getCallInputs(
-    //         address(coolVault),
-    //         coolVault.withdraw.selector
-    //     );
-
-    //     uint256 totalAssetsWithdrawn = 0;
-    //     uint256 totalSharesExpected = 0;
-
-    //     // Calculate expected changes from all withdraw calls
-    //     for (uint256 i = 0; i < inputs.length; i++) {
-    //         (uint256 assets, , ) = abi.decode(
-    //             inputs[i].input,
-    //             (uint256, address, address)
-    //         );
-    //         totalAssetsWithdrawn += assets;
-    //         totalSharesExpected += coolVault.previewWithdraw(assets);
-    //     }
-
-    //     ph.forkPostState();
-
-    //     // Get post-state values
-    //     uint256 postVaultAssets = coolVault.totalAssets();
-    //     uint256 postVaultSupply = coolVault.totalSupply();
-
-    //     // Verify total assets decreased correctly
-    //     require(
-    //         postVaultAssets == preVaultAssets - totalAssetsWithdrawn,
-    //         "Withdraw: Total assets not updated correctly"
-    //     );
-
-    //     // Verify total supply decreased correctly
-    //     require(
-    //         postVaultSupply == preVaultSupply - totalSharesExpected,
-    //         "Withdraw: Total supply not updated correctly"
-    //     );
-    // }
-
-    // /**
-    //  * @dev Assertion for redeem function: validates that total supply and total assets are correctly updated
-    //  * Tests that redeeming shares decreases both vault's total supply and total assets proportionally
-    //  */
-    // function assertionRedeemUpdatesSupplyAndAssets() external {
-    //     ph.forkPreState();
-
-    //     // Get pre-state values
-    //     uint256 preVaultAssets = coolVault.totalAssets();
-    //     uint256 preVaultSupply = coolVault.totalSupply();
-
-    //     // Get all redeem calls in this transaction
-    //     PhEvm.CallInputs[] memory inputs = ph.getCallInputs(
-    //         address(coolVault),
-    //         coolVault.redeem.selector
-    //     );
-
-    //     uint256 totalSharesRedeemed = 0;
-    //     uint256 totalAssetsExpected = 0;
-
-    //     // Calculate expected changes from all redeem calls
-    //     for (uint256 i = 0; i < inputs.length; i++) {
-    //         (uint256 shares, , ) = abi.decode(
-    //             inputs[i].input,
-    //             (uint256, address, address)
-    //         );
-    //         totalSharesRedeemed += shares;
-    //         totalAssetsExpected += coolVault.previewRedeem(shares);
-    //     }
-
-    //     ph.forkPostState();
-
-    //     // Get post-state values
-    //     uint256 postVaultAssets = coolVault.totalAssets();
-    //     uint256 postVaultSupply = coolVault.totalSupply();
-
-    //     // Verify total assets decreased correctly
-    //     require(
-    //         postVaultAssets == preVaultAssets - totalAssetsExpected,
-    //         "Redeem: Total assets not updated correctly"
-    //     );
-
-    //     // Verify total supply decreased correctly
-    //     require(
-    //         postVaultSupply == preVaultSupply - totalSharesRedeemed,
-    //         "Redeem: Total supply not updated correctly"
-    //     );
-    // }
 
     /**
      * @dev Comprehensive assertion for batch operations: validates that all ERC4626 operations
@@ -265,79 +40,45 @@ contract ERC4626OperationsAssertion is Assertion {
      */
     function assertionBatchOperationsConsistency() external {
         // Get call inputs for all four functions
-        PhEvm.CallInputs[] memory depositInputs = ph.getCallInputs(
-            address(coolVault),
-            coolVault.deposit.selector
-        );
-        PhEvm.CallInputs[] memory mintInputs = ph.getCallInputs(
-            address(coolVault),
-            coolVault.mint.selector
-        );
-        PhEvm.CallInputs[] memory withdrawInputs = ph.getCallInputs(
-            address(coolVault),
-            coolVault.withdraw.selector
-        );
-        PhEvm.CallInputs[] memory redeemInputs = ph.getCallInputs(
-            address(coolVault),
-            coolVault.redeem.selector
-        );
+        PhEvm.CallInputs[] memory depositInputs = ph.getCallInputs(address(coolVault), coolVault.deposit.selector);
+        PhEvm.CallInputs[] memory mintInputs = ph.getCallInputs(address(coolVault), coolVault.mint.selector);
+        PhEvm.CallInputs[] memory withdrawInputs = ph.getCallInputs(address(coolVault), coolVault.withdraw.selector);
+        PhEvm.CallInputs[] memory redeemInputs = ph.getCallInputs(address(coolVault), coolVault.redeem.selector);
 
-        // Calculate net changes from all operations (simplified)
-        int256 netAssetChange = 0;
-        int256 netSupplyChange = 0;
+        // Calculate net changes from all operations
+        uint256 totalAssetsAdded = 0;
+        uint256 totalAssetsRemoved = 0;
+        uint256 totalSharesAdded = 0;
+        uint256 totalSharesRemoved = 0;
 
         // Process deposit operations (increase assets and supply)
         for (uint256 i = 0; i < depositInputs.length; i++) {
-            (uint256 assets, ) = abi.decode(
-                depositInputs[i].input,
-                (uint256, address)
-            );
-            netAssetChange += int256(assets);
-            // Simplified: assume 1:1 ratio for gas efficiency
-            netSupplyChange += int256(assets);
+            (uint256 assets,) = abi.decode(depositInputs[i].input, (uint256, address));
+            totalAssetsAdded += assets;
+            totalSharesAdded += coolVault.previewDeposit(assets);
         }
 
         // Process mint operations (increase assets and supply)
         for (uint256 i = 0; i < mintInputs.length; i++) {
-            (uint256 shares, ) = abi.decode(
-                mintInputs[i].input,
-                (uint256, address)
-            );
-            netSupplyChange += int256(shares);
-            // Simplified: assume 1:1 ratio for gas efficiency
-            netAssetChange += int256(shares);
+            (uint256 shares,) = abi.decode(mintInputs[i].input, (uint256, address));
+            totalSharesAdded += shares;
+            totalAssetsAdded += coolVault.previewMint(shares);
         }
 
         // Process withdraw operations (decrease assets and supply)
         for (uint256 i = 0; i < withdrawInputs.length; i++) {
-            (uint256 assets, , ) = abi.decode(
-                withdrawInputs[i].input,
-                (uint256, address, address)
-            );
-            netAssetChange -= int256(assets);
-            // Simplified: assume 1:1 ratio for gas efficiency
-            netSupplyChange -= int256(assets);
+            (uint256 assets,,) = abi.decode(withdrawInputs[i].input, (uint256, address, address));
+            totalAssetsRemoved += assets;
+            totalSharesRemoved += coolVault.previewWithdraw(assets);
         }
 
         // Process redeem operations (decrease assets and supply)
         for (uint256 i = 0; i < redeemInputs.length; i++) {
-            (uint256 shares, , ) = abi.decode(
-                redeemInputs[i].input,
-                (uint256, address, address)
-            );
-            netSupplyChange -= int256(shares);
-            // Simplified: assume 1:1 ratio for gas efficiency
-            netAssetChange -= int256(shares);
+            (uint256 shares,,) = abi.decode(redeemInputs[i].input, (uint256, address, address));
+            totalSharesRemoved += shares;
+            totalAssetsRemoved += coolVault.previewRedeem(shares);
         }
 
-        verifyChange(netAssetChange, netSupplyChange);
-    }
-
-    // Get post-state values
-    function verifyChange(
-        int256 netAssetChange,
-        int256 netSupplyChange
-    ) internal {
         ph.forkPreState();
         uint256 preVaultAssets = coolVault.totalAssets();
         uint256 preVaultSupply = coolVault.totalSupply();
@@ -346,16 +87,86 @@ contract ERC4626OperationsAssertion is Assertion {
         uint256 postVaultAssets = coolVault.totalAssets();
         uint256 postVaultSupply = coolVault.totalSupply();
 
+        // Calculate expected changes
+        uint256 expectedAssetsAdded = postVaultAssets > preVaultAssets ? postVaultAssets - preVaultAssets : 0;
+        uint256 expectedAssetsRemoved = preVaultAssets > postVaultAssets ? preVaultAssets - postVaultAssets : 0;
+        uint256 expectedSharesAdded = postVaultSupply > preVaultSupply ? postVaultSupply - preVaultSupply : 0;
+        uint256 expectedSharesRemoved = preVaultSupply > postVaultSupply ? preVaultSupply - postVaultSupply : 0;
+
         // Ensure operations had some effect if there were calls
-        int256 expectedNetAssetChange = int256(netAssetChange);
-        int256 expectedNetSupplyChange = int256(netSupplyChange);
+        require(totalAssetsAdded == expectedAssetsAdded, "Batch Operations: Assets added mismatch");
+        require(totalAssetsRemoved == expectedAssetsRemoved, "Batch Operations: Assets removed mismatch");
+        require(totalSharesAdded == expectedSharesAdded, "Batch Operations: Shares added mismatch");
+        require(totalSharesRemoved == expectedSharesRemoved, "Batch Operations: Shares removed mismatch");
+    }
+
+    /**
+     * @dev Assertion to verify that deposit operations correctly increase the vault's asset balance
+     * This ensures that when users deposit assets, the vault's total assets increase by exactly the deposited amount
+     */
+    function assertionDepositIncreasesBalance() external {
+        // create a snapshot of the blockchain state before the transaction
+        ph.forkPreState();
+
+        // get the balance of the vault before the transaction
+        uint256 vaultAssetPreBalance = CoolVault(coolVault).totalAssets();
+
+        PhEvm.CallInputs[] memory inputs = ph.getCallInputs(address(coolVault), coolVault.deposit.selector);
+
+        uint256 totalBalanceDeposited = 0;
+        for (uint256 i = 0; i < inputs.length; i++) {
+            (uint256 assets,) = abi.decode(inputs[i].input, (uint256, address));
+            totalBalanceDeposited += assets;
+        }
+
+        // get the snapshot of state after the transaction
+        ph.forkPostState();
+
+        uint256 vaultAssetPostBalance = CoolVault(coolVault).totalAssets();
+
         require(
-            netAssetChange == expectedNetAssetChange,
-            "Batch Operations: Asset change mismatch"
+            vaultAssetPostBalance == vaultAssetPreBalance + totalBalanceDeposited,
+            "Deposit assertion failed: Vault assets did not increase by the correct amount"
         );
+    }
+
+    /**
+     * @dev Assertion to verify that deposit operations correctly increase the depositor's share balance
+     * This ensures that when users deposit assets, they receive the correct number of shares
+     */
+    function assertionDepositerSharesIncreases() external {
+        PhEvm.CallInputs[] memory inputs = ph.getCallInputs(address(coolVault), coolVault.deposit.selector);
+
+        for (uint256 i = 0; i < inputs.length; i++) {
+            ph.forkPreState();
+            (uint256 assets,) = abi.decode(inputs[i].input, (uint256, address));
+            uint256 previewPreAssets = CoolVault(coolVault).previewDeposit(assets);
+            address depositer = inputs[0].caller;
+            uint256 preShares = CoolVault(coolVault).balanceOf(depositer);
+
+            ph.forkPostState();
+
+            uint256 postShares = CoolVault(coolVault).balanceOf(depositer);
+
+            require(
+                postShares == preShares + previewPreAssets,
+                "Depositer shares assertion failed: Share balance did not increase correctly"
+            );
+        }
+    }
+
+    /**
+     * @dev Base invariant assertion to verify that the vault always has at least as many assets as shares
+     * This is a fundamental invariant of ERC4626 vaults - they should never have more shares than assets
+     */
+    function assertionVaultAlwaysAccumulatesAssets() external {
+        ph.forkPostState();
+
+        uint256 vaultAssetPostBalance = CoolVault(coolVault).totalAssets();
+        uint256 vaultSharesPostBalance = CoolVault(coolVault).balanceOf(address(coolVault));
+
         require(
-            netSupplyChange == expectedNetSupplyChange,
-            "Batch Operations: Supply change mismatch"
+            vaultAssetPostBalance >= vaultSharesPostBalance, "Base invariant failed: Vault has more shares than assets"
         );
     }
 }

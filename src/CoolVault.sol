@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /**
  * @title CoolVault
@@ -17,11 +17,11 @@ contract CoolVault is ERC4626, Ownable {
      * @param _name The name of the vault token (e.g., "Cool Vault Token")
      * @param _symbol The symbol of the vault token (e.g., "cvTOKEN")
      */
-    constructor(
-        IERC20 _asset,
-        string memory _name,
-        string memory _symbol
-    ) ERC20(_name, _symbol) ERC4626(_asset) Ownable(msg.sender) {}
+    constructor(IERC20 _asset, string memory _name, string memory _symbol)
+        ERC20(_name, _symbol)
+        ERC4626(_asset)
+        Ownable(msg.sender)
+    {}
 
     /**
      * @dev Returns the total amount of underlying assets held by the vault
@@ -80,22 +80,6 @@ contract CoolVault is ERC4626, Ownable {
         // For now, this is just a placeholder
     }
 
-    /**
-     * @dev Hook that is called before any transfer of tokens
-     * Can be used to implement additional logic like fees or restrictions
-     */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual {
-        // This is where you could add custom logic like:
-        // - Transfer fees
-        // - Blacklisting
-        // - Additional restrictions
-        super._update(from, to, amount);
-    }
-
     // ========== OVERRIDDEN ERC4626 FUNCTIONS WITH ACCOUNTING BUGS ==========
     // These functions override the standard ERC4626 functions to introduce
     // deliberate accounting inconsistencies that will trigger the assertions
@@ -104,10 +88,7 @@ contract CoolVault is ERC4626, Ownable {
      * @dev Conditionally buggy deposit function
      * Behaves normally except when assets == 13, then mints extra shares
      */
-    function deposit(
-        uint256 assets,
-        address receiver
-    ) public virtual override returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) public virtual override returns (uint256 shares) {
         // Check if this is the special bug trigger case
         if (assets == 13 ether) {
             // BUG CASE: Manual implementation with accounting error
@@ -133,10 +114,7 @@ contract CoolVault is ERC4626, Ownable {
      * @dev Conditionally buggy mint function
      * Behaves normally except when shares == 13, then requires fewer assets
      */
-    function mint(
-        uint256 shares,
-        address receiver
-    ) public virtual override returns (uint256 assets) {
+    function mint(uint256 shares, address receiver) public virtual override returns (uint256 assets) {
         // Check if this is the special bug trigger case
         if (shares == 13 ether) {
             // BUG CASE: Manual implementation with accounting error
@@ -144,11 +122,7 @@ contract CoolVault is ERC4626, Ownable {
 
             // BUG: Only transfer 90% of the required assets
             uint256 buggyAssets = assets - (assets / 10);
-            IERC20(asset()).transferFrom(
-                msg.sender,
-                address(this),
-                buggyAssets
-            );
+            IERC20(asset()).transferFrom(msg.sender, address(this), buggyAssets);
 
             // Mint the full amount of shares requested
             _mint(receiver, shares);
@@ -166,11 +140,12 @@ contract CoolVault is ERC4626, Ownable {
      * @dev Conditionally buggy withdraw function
      * Behaves normally except when assets == 13, then burns fewer shares
      */
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) public virtual override returns (uint256 shares) {
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        virtual
+        override
+        returns (uint256 shares)
+    {
         // Check if this is the special bug trigger case
         if (assets == 13 ether) {
             // BUG CASE: Manual implementation with accounting error
@@ -180,10 +155,7 @@ contract CoolVault is ERC4626, Ownable {
             if (msg.sender != owner) {
                 uint256 allowed = allowance(owner, msg.sender);
                 if (allowed != type(uint256).max) {
-                    require(
-                        shares <= allowed,
-                        "ERC4626: withdraw amount exceeds allowance"
-                    );
+                    require(shares <= allowed, "ERC4626: withdraw amount exceeds allowance");
                     _approve(owner, msg.sender, allowed - shares);
                 }
             }
@@ -208,11 +180,7 @@ contract CoolVault is ERC4626, Ownable {
      * @dev Conditionally buggy redeem function
      * Behaves normally except when shares == 13, then gives extra assets
      */
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) public virtual override returns (uint256 assets) {
+    function redeem(uint256 shares, address receiver, address owner) public virtual override returns (uint256 assets) {
         // Check if this is the special bug trigger case
         if (shares == 13 ether) {
             // BUG CASE: Manual implementation with accounting error
@@ -222,10 +190,7 @@ contract CoolVault is ERC4626, Ownable {
             if (msg.sender != owner) {
                 uint256 allowed = allowance(owner, msg.sender);
                 if (allowed != type(uint256).max) {
-                    require(
-                        shares <= allowed,
-                        "ERC4626: redeem amount exceeds allowance"
-                    );
+                    require(shares <= allowed, "ERC4626: redeem amount exceeds allowance");
                     _approve(owner, msg.sender, allowed - shares);
                 }
             }
@@ -252,10 +217,7 @@ contract CoolVault is ERC4626, Ownable {
      * @dev Helper function to create phantom shares (owner only)
      * This mints shares without receiving any underlying assets
      */
-    function createPhantomShares(
-        address to,
-        uint256 shares
-    ) external onlyOwner {
+    function createPhantomShares(address to, uint256 shares) external onlyOwner {
         _mint(to, shares);
         // BUG: We mint shares but don't receive any underlying assets
         // This breaks the fundamental ERC4626 invariant
