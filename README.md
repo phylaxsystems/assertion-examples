@@ -4,10 +4,12 @@ This repository contains a collection of sample assertions for the Phylax Credib
 
 Check out the [official documentation](https://docs.phylax.systems/) to learn more about assertions and the Credible Layer.
 
-To run the tests run the following command:
+To run the tests:
+1. Install [pcl](https://github.com/phylaxsystems/pcl)
+2. Execute the following command from the root of the repository:
 
 ```
-pcl test assertions/test
+pcl test
 ```
 
 ## Previous Hacks
