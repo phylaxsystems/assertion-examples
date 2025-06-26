@@ -6,7 +6,7 @@ import {CredibleTest} from "credible-std/CredibleTest.sol";
 import {Test} from "forge-std/Test.sol";
 import {MockToken} from "../../src/MockToken.sol";
 import {ERC4626OperationsAssertion} from "../src/ass2-erc4626-operations.a.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/console.sol";
 
 contract TestERC4626OperationsAssertion is CredibleTest, Test {
