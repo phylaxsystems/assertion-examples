@@ -18,7 +18,7 @@ contract AmmFeeVerificationAssertion is Assertion {
     }
 
     // Verify that any fee change is to an allowed value
-    function assertFeeVerification() external {
+    function assertFeeVerification() external view {
         // Get the assertion adopter address
         IPool adopter = IPool(ph.getAssertionAdopter());
 

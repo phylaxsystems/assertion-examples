@@ -81,36 +81,34 @@ contract TestFeeVerification is CredibleTest, Test {
     }
 
     function test_batchFeeChanges() public {
-        cl.assertion({
-            adopter: address(protocol),
-            createData: type(AmmFeeVerificationAssertion).creationCode,
-            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
-        });
-
         // Create a batch fee changer that will make multiple fee changes
         BatchFeeChanges batchChanger = new BatchFeeChanges(address(protocol));
 
-        // Execute the batch fee changes
-        vm.prank(user);
-        (bool success,) = address(batchChanger).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch fee changes failed");
-    }
-
-    function test_batchFeeChangesWithInvalid() public {
         cl.assertion({
             adopter: address(protocol),
             createData: type(AmmFeeVerificationAssertion).creationCode,
             fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
         });
 
+        // Execute the batch fee changes
+        vm.prank(user);
+        batchChanger.batchFeeChanges();
+    }
+
+    function test_batchFeeChangesWithInvalid() public {
         // Create a batch fee changer that will include an invalid fee change
         BatchFeeChangesWithInvalid batchChanger = new BatchFeeChangesWithInvalid(address(protocol));
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
 
         // Execute the batch fee changes, expecting a revert due to the invalid fee
         vm.prank(user);
         vm.expectRevert("Unauthorized fee change detected in callstack");
-        (bool success,) = address(batchChanger).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch fee changes failed");
+        batchChanger.batchFeeChanges();
     }
 }
 
@@ -125,7 +123,7 @@ contract BatchFeeChanges {
         pool = Pool(pool_);
     }
 
-    fallback() external {
+    function batchFeeChanges() external {
         // Make multiple fee changes in a single transaction
         // Alternate between allowed fee values for stable pools
         pool.setFee(STABLE_POOL_FEE_1);
@@ -153,7 +151,7 @@ contract BatchFeeChangesWithInvalid {
         pool = Pool(pool_);
     }
 
-    fallback() external {
+    function batchFeeChanges() external {
         // Make multiple fee changes in a single transaction
         // Start with valid fees but include an invalid one
         pool.setFee(STABLE_POOL_FEE_1);
