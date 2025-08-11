@@ -36,20 +36,21 @@ contract TestTimelockVerification is CredibleTest, Test {
         });
 
         vm.prank(user);
-        // This should pass because delay is within bounds
+        // This reverts because no assertion was triggered
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
         protocol.setTimelock(1 days);
     }
 
     function test_assertionTimelockAlreadyActive() public {
+        // First activate the timelock
+        vm.prank(user);
+        protocol.activateTimelock();
+
         cl.assertion({
             adopter: address(protocol),
             createData: type(TimelockVerificationAssertion).creationCode,
             fnSelector: TimelockVerificationAssertion.assertionTimelock.selector
         });
-
-        // First activate the timelock
-        vm.prank(user);
-        protocol.activateTimelock();
 
         // This should pass because timelock was already active and we don't care about the delay
         vm.prank(user);
