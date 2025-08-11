@@ -10,7 +10,6 @@ contract TestOracleLiveness is CredibleTest, Test {
     // Contract state variables
     Oracle public oracle;
     Dex public dex;
-    string constant ASSERTION_LABEL = "OracleLivenessAssertion";
 
     // Constants for testing
     uint256 public constant MAX_UPDATE_WINDOW = 10 minutes;
@@ -28,38 +27,32 @@ contract TestOracleLiveness is CredibleTest, Test {
     }
 
     function test_assertionOracleFresh() public {
-        address dexAddress = address(dex);
-
-        // Associate the assertion with the DEX
-        cl.addAssertion(
-            ASSERTION_LABEL, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex)
-        );
+        cl.assertion({
+            adopter: address(dex),
+            createData: type(OracleLivenessAssertion).creationCode,
+            fnSelector: OracleLivenessAssertion.assertionOracleLiveness.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because the oracle data is fresh
-        cl.validate(
-            ASSERTION_LABEL, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount))
-        );
+        dex.swap(tokenA, tokenB, swapAmount);
     }
 
     function test_assertionOracleStale() public {
-        address dexAddress = address(dex);
-
         // Fast forward time to make oracle data stale
         vm.warp(block.timestamp + MAX_UPDATE_WINDOW + 1);
 
-        // Associate the assertion with the DEX
-        cl.addAssertion(
-            ASSERTION_LABEL, dexAddress, type(OracleLivenessAssertion).creationCode, abi.encode(oracle, dex)
-        );
+        cl.assertion({
+            adopter: address(dex),
+            createData: type(OracleLivenessAssertion).creationCode,
+            fnSelector: OracleLivenessAssertion.assertionOracleLiveness.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because the oracle data is stale
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL, dexAddress, 0, abi.encodePacked(dex.swap.selector, abi.encode(tokenA, tokenB, swapAmount))
-        );
+        vm.expectRevert("Oracle not updated within the allowed time window");
+        dex.swap(tokenA, tokenB, swapAmount);
     }
 }

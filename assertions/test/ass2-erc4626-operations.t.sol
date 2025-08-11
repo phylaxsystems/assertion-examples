@@ -74,37 +74,36 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
 
     // Test deposit function assertion
     function test_assertionDepositUpdatesSupplyAndAssets() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626DepositAssertion";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionDepositIncreasesBalance.selector
+        });
 
         // Test single deposit
         vm.prank(user1);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(100 ether, user1)));
+        vault.deposit(100 ether, user1);
     }
 
     // Test mint function assertion
     function test_assertionMintUpdatesSupplyAndAssets() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626MintAssertion";
-
         // First, make an initial deposit to establish exchange rate
         vm.prank(user1);
         vault.deposit(50 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test mint function
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.mint.selector, abi.encode(75 ether, user2)));
+        vault.mint(75 ether, user2);
     }
 
     // Test withdraw function assertion
     function test_assertionWithdrawUpdatesSupplyAndAssets() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626WithdrawAssertion";
-
         // Setup: Users deposit first
         vm.prank(user1);
         vault.deposit(200 ether, user1);
@@ -112,20 +111,19 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         vm.prank(user2);
         vault.deposit(150 ether, user2);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test withdraw function
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.withdraw.selector, abi.encode(50 ether, user1, user1))
-        );
+        vault.withdraw(50 ether, user1, user1);
     }
 
     // Test redeem function assertion
     function test_assertionRedeemUpdatesSupplyAndAssets() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626RedeemAssertion";
-
         // Setup: Users deposit first
         vm.prank(user1);
         vault.deposit(300 ether, user1);
@@ -133,7 +131,11 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         vm.prank(user2);
         vault.deposit(200 ether, user2);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Get user1's share balance for redeem test
         uint256 user1Shares = vault.balanceOf(user1);
@@ -141,21 +143,20 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
 
         // Test redeem function
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.redeem.selector, abi.encode(sharesToRedeem, user1, user1))
-        );
+        vault.redeem(sharesToRedeem, user1, user1);
     }
 
     // ===== Base Invariant Tests =====
 
     function test_assertionVaultAlwaysAccumulatesAssetsWithDeposit() public {
-        address vaultAddress = address(vault);
-        string memory label = "BaseInvariantAssertion";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionVaultAlwaysAccumulatesAssets.selector
+        });
 
         vm.prank(user1);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(0.1 ether, user1)));
+        vault.deposit(0.1 ether, user1);
     }
 
     function test_assertionVaultAlwaysAccumulatesAssetsWithWithdraw() public {
@@ -163,141 +164,144 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         vm.prank(user1);
         vault.deposit(0.1 ether, user1);
 
-        address vaultAddress = address(vault);
-        string memory label = "BaseInvariantAssertion";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionVaultAlwaysAccumulatesAssets.selector
+        });
 
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.withdraw.selector, abi.encode(0.1 ether, user1, user1))
-        );
+        vault.withdraw(0.1 ether, user1, user1);
     }
 
     // ===== Accounting Bug Tests =====
 
     // Test Bug 1: Buggy deposit function that mints extra shares (only when assets == 13)
     function test_buggyDeposit_TriggersAssertion() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626DepositBugTest";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionDepositIncreasesBalance.selector
+        });
 
         // Trigger the buggy deposit with value 13 - this should cause assertion to fail
         // The deposit function mints 10% extra shares when assets == 13
         vm.prank(user1);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(13 ether, user1)));
+        vm.expectRevert("Deposit assertion failed: Vault assets did not increase by the correct amount");
+        vault.deposit(13 ether, user1);
     }
 
     // Test that normal deposit works fine (non-13 values)
     function test_normalDeposit_WorksFine() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626NormalDepositTest";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionDepositIncreasesBalance.selector
+        });
 
         // Normal deposit with value != 13 should work fine
         vm.prank(user1);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(100 ether, user1)));
+        vault.deposit(100 ether, user1);
     }
 
     // Test Bug 2: Buggy mint function that requires fewer assets (only when shares == 13)
     function test_buggyMint_TriggersAssertion() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626MintBugTest";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Trigger the buggy mint with value 13 - this should cause assertion to fail
         // The mint function only takes 90% of required assets when shares == 13
         vm.prank(user1);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.mint.selector, abi.encode(13 ether, user1)));
+        vm.expectRevert("Batch Operations: Assets added mismatch");
+        vault.mint(13 ether, user1);
     }
 
     // Test that normal mint works fine (non-13 values)
     function test_normalMint_WorksFine() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626NormalMintTest";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Normal mint with value != 13 should work fine
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.mint.selector, abi.encode(50 ether, user2)));
+        vault.mint(50 ether, user2);
     }
 
     // Test Bug 3: Buggy withdraw function that burns fewer shares (only when assets == 13)
     function test_buggyWithdraw_TriggersAssertion() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626WithdrawBugTest";
-
         // Setup: user1 has shares to withdraw using normal deposit
         vm.prank(user1);
         vault.deposit(100 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Trigger the buggy withdraw with value 13 - this should cause assertion to fail
         // The withdraw function burns 5% fewer shares when assets == 13
         vm.prank(user1);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.withdraw.selector, abi.encode(13 ether, user1, user1))
-        );
+        vm.expectRevert("Batch Operations: Shares removed mismatch");
+        vault.withdraw(13 ether, user1, user1);
     }
 
     // Test that normal withdraw works fine (non-13 values)
     function test_normalWithdraw_WorksFine() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626NormalWithdrawTest";
-
         // Setup: user1 has shares to withdraw
         vm.prank(user1);
         vault.deposit(100 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Normal withdraw with value != 13 should work fine
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.withdraw.selector, abi.encode(50 ether, user1, user1))
-        );
+        vault.withdraw(50 ether, user1, user1);
     }
 
     // Test Bug 4: Buggy redeem function that gives extra assets (only when shares == 13)
     function test_buggyRedeem_TriggersAssertion() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626RedeemBugTest";
-
         // Setup: user1 has shares to redeem using normal deposit
         vm.prank(user1);
         vault.deposit(100 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Trigger the buggy redeem with value 13 - this should cause assertion to fail
         // The redeem function gives 15% more assets when shares == 13
         vm.prank(user1);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.redeem.selector, abi.encode(13 ether, user1, user1)));
+        vm.expectRevert("Batch Operations: Assets removed mismatch");
+        vault.redeem(13 ether, user1, user1);
     }
 
     // Test that normal redeem works fine (non-13 values)
     function test_normalRedeem_WorksFine() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626NormalRedeemTest";
-
         // Setup: user1 has shares to redeem
         vm.prank(user1);
         vault.deposit(100 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Normal redeem with value != 13 should work fine
         vm.prank(user1);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.redeem.selector, abi.encode(50 ether, user1, user1)));
+        vault.redeem(50 ether, user1, user1);
     }
 
     // Test redeem functionality without using assertion library
@@ -355,44 +359,38 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
 
     // Test multiple operations in sequence to ensure consistency
     function test_multipleOperationsSequence() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626MultipleOpsAssertion";
-
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // 1. Initial deposits
         vm.prank(user1);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(100 ether, user1)));
+        vault.deposit(100 ether, user1);
 
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(150 ether, user2)));
+        vault.deposit(150 ether, user2);
 
         // 2. Mint shares (smaller amount to avoid exchange rate issues)
         vm.prank(user3);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.mint.selector, abi.encode(25 ether, user3)));
+        vault.mint(25 ether, user3);
 
         // 3. Withdraw some assets (use maxWithdraw to ensure we don't exceed limits)
         uint256 maxWithdrawUser1 = vault.maxWithdraw(user1);
         uint256 withdrawAmount = maxWithdrawUser1 / 10; // Withdraw 10% of max
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.withdraw.selector, abi.encode(withdrawAmount, user1, user1))
-        );
+        vault.withdraw(withdrawAmount, user1, user1);
 
         // 4. Redeem some shares (use maxRedeem to ensure we don't exceed limits)
         uint256 maxRedeemUser2 = vault.maxRedeem(user2);
         uint256 redeemAmount = maxRedeemUser2 / 10; // Redeem 10% of max
         vm.prank(user2);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.redeem.selector, abi.encode(redeemAmount, user2, user2))
-        );
+        vault.redeem(redeemAmount, user2, user2);
     }
 
     // Test batch operations with mixed deposit/withdraw in same transaction
     function test_batchMixedOperations() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626MixedBatchAssertion";
-
         // Setup initial state
         vm.prank(user1);
         vault.deposit(1000 ether, user1);
@@ -400,19 +398,20 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         vm.prank(user2);
         vault.deposit(800 ether, user2);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test a deposit followed by a withdrawal in the same validation
         // This tests the batch assertion's ability to handle net changes
         vm.prank(user3);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(200 ether, user3)));
+        vault.deposit(200 ether, user3);
     }
 
     // Test batch operations with all four functions
     function test_batchAllFourOperations() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626AllOperationsBatchAssertion";
-
         // Setup: All users have deposits and shares
         vm.prank(user1);
         vault.deposit(400 ether, user1);
@@ -423,84 +422,85 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         vm.prank(user3);
         vault.deposit(200 ether, user3);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test deposit operation (will trigger batch assertion)
         vm.prank(user1);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(50 ether, user1)));
+        vault.deposit(50 ether, user1);
 
         // Test mint operation
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.mint.selector, abi.encode(25 ether, user2)));
+        vault.mint(25 ether, user2);
 
         // Test withdraw operation
         uint256 maxWithdraw = vault.maxWithdraw(user3);
         vm.prank(user3);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.withdraw.selector, abi.encode(maxWithdraw / 5, user3, user3))
-        );
+        vault.withdraw(maxWithdraw / 5, user3, user3);
 
         // Test redeem operation
         uint256 maxRedeem = vault.maxRedeem(user1);
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.redeem.selector, abi.encode(maxRedeem / 10, user1, user1))
-        );
+        vault.redeem(maxRedeem / 10, user1, user1);
     }
 
     // ===== Edge Case Tests =====
 
     // Test edge case: operations with zero amounts (should still maintain consistency)
     function test_zeroAmountOperations() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626ZeroAmountAssertion";
-
         // Setup with initial deposit
         vm.prank(user1);
         vault.deposit(100 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test zero deposit (should not change totals)
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(0, user2)));
+        vault.deposit(0, user2);
     }
 
     // Test large amounts to ensure no overflow issues
     function test_largeAmountOperations() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626LargeAmountAssertion";
-
         // Setup users with large amounts
         uint256 largeAmount = 1e24; // 1 million tokens with 18 decimals
         _setupUser(user1, largeAmount);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test large deposit
         vm.prank(user1);
-        cl.validate(
-            label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(largeAmount / 2, user1))
-        );
+        vault.deposit(largeAmount / 2, user1);
     }
 
     // Test edge case: batch operations with zero amounts
     function test_batchOperationsWithZeroAmounts() public {
-        address vaultAddress = address(vault);
-        string memory label = "ERC4626ZeroBatchAssertion";
-
         // Setup initial state
         vm.prank(user1);
         vault.deposit(100 ether, user1);
 
-        cl.addAssertion(label, vaultAddress, type(ERC4626OperationsAssertion).creationCode, abi.encode(vault));
+        cl.assertion({
+            adopter: address(vault),
+            createData: type(ERC4626OperationsAssertion).creationCode,
+            fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
+        });
 
         // Test zero amount operations (should maintain consistency)
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.deposit.selector, abi.encode(0, user2)));
+        vault.deposit(0, user2);
 
         vm.prank(user2);
-        cl.validate(label, vaultAddress, 0, abi.encodePacked(vault.mint.selector, abi.encode(0, user2)));
+        vault.mint(0, user2);
     }
 }
 

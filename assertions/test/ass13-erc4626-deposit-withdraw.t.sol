@@ -12,7 +12,6 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
     address public user = address(0x1234);
     uint256 public depositAmount = 1 ether; // Using 1 ether (1e18) instead of 1000
     uint256 public withdrawAmount = 0.5 ether; // Using 0.5 ether (5e17) instead of 500
-    string constant ASSERTION_LABEL = "ERC4626DepositWithdrawAssertion";
 
     // Special amounts that trigger bugs in the protocol
     uint256 public constant SPECIAL_DEPOSIT_AMOUNT = 13 ether;
@@ -30,43 +29,31 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
     }
 
     function test_assertionDepositAssets_pass() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionDepositAssets.selector
+        });
 
         vm.prank(user);
         // This should pass because we're depositing assets correctly
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.deposit.selector, abi.encode(depositAmount, user))
-        );
+        protocol.deposit(depositAmount, user);
     }
 
     function test_assertionDepositAssets_fail() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionDepositAssets.selector
+        });
 
         // The deposit of exactly 13 ether will trigger the special case
         // where _totalAssets is incorrectly updated (1 ether less)
         vm.prank(user);
         // This should fail because the deposit function has a special case
         // that deliberately miscalculates assets when exactly 13 ether is deposited
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.deposit.selector, abi.encode(SPECIAL_DEPOSIT_AMOUNT, user))
-        );
+        vm.expectRevert("Deposit assets assertion failed: incorrect total assets");
+        protocol.deposit(SPECIAL_DEPOSIT_AMOUNT, user);
     }
 
     function test_assertionWithdrawAssets_pass() public {
@@ -74,21 +61,15 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
         vm.prank(user);
         protocol.deposit(depositAmount, user);
 
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionWithdrawAssets.selector
+        });
 
         vm.prank(user);
         // This should pass because we're withdrawing assets correctly
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.withdraw.selector, abi.encode(withdrawAmount, user, user))
-        );
+        protocol.withdraw(withdrawAmount, user, user);
     }
 
     function test_assertionWithdrawAssets_fail() public {
@@ -96,61 +77,43 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
         vm.prank(user);
         protocol.deposit(SPECIAL_WITHDRAW_AMOUNT * 2, user); // Double to ensure enough balance
 
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionWithdrawAssets.selector
+        });
 
         vm.prank(user);
         // This should fail because the withdraw function has a special case
         // that deliberately miscalculates assets when exactly 7 ether is withdrawn
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.withdraw.selector, abi.encode(SPECIAL_WITHDRAW_AMOUNT, user, user))
-        );
+        vm.expectRevert("Withdraw assets assertion failed: incorrect total assets");
+        protocol.withdraw(SPECIAL_WITHDRAW_AMOUNT, user, user);
     }
 
     function test_assertionPreviewDeposit_pass() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionDepositShares.selector
+        });
 
         vm.prank(user);
         // This should pass because we're previewing a deposit correctly
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.previewDeposit.selector, abi.encode(depositAmount))
-        );
+        protocol.deposit(depositAmount, user);
     }
 
     function test_assertionPreviewDeposit_fail() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionDepositShares.selector
+        });
 
         // Try depositing the special amount (13 ether), which should fail because
         // the vault has a deliberate accounting error for this specific amount
         vm.prank(user);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.deposit.selector, abi.encode(SPECIAL_DEPOSIT_AMOUNT, user))
-        );
+        vm.expectRevert("Deposit shares assertion failed: receiver did not receive expected number of shares");
+        protocol.deposit(SPECIAL_DEPOSIT_AMOUNT, user);
     }
 
     function test_assertionPreviewWithdraw_pass() public {
@@ -158,21 +121,15 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
         vm.prank(user);
         protocol.deposit(depositAmount, user);
 
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionWithdrawShares.selector
+        });
 
         vm.prank(user);
         // This should pass because we're previewing a withdrawal correctly
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.previewWithdraw.selector, abi.encode(withdrawAmount))
-        );
+        protocol.withdraw(withdrawAmount, user, user);
     }
 
     function test_assertionPreviewWithdraw_fail() public {
@@ -180,12 +137,11 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
         vm.prank(user);
         protocol.deposit(depositAmount, user);
 
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ERC4626DepositWithdrawAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ERC4626DepositWithdrawAssertion).creationCode,
+            fnSelector: ERC4626DepositWithdrawAssertion.assertionWithdrawShares.selector
+        });
 
         // Record the initial balance
         uint256 initialBalance = protocol.balanceOf(user);
@@ -199,12 +155,7 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
 
         vm.prank(user);
         // This should fail because the balance doesn't match what previewWithdraw returned
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.withdraw.selector, abi.encode(withdrawAmount, user, user))
-        );
+        vm.expectRevert("Withdraw shares assertion failed: incorrect number of shares burned");
+        protocol.withdraw(withdrawAmount, user, user);
     }
 }

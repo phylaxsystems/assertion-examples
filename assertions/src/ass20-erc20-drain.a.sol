@@ -4,32 +4,13 @@ pragma solidity ^0.8.13;
 import {Assertion} from "credible-std/Assertion.sol";
 import {PhEvm} from "credible-std/PhEvm.sol";
 
-interface IERC20 {
-    function balanceOf(address account) external view returns (uint256);
-}
-
-interface IProtocol {
-// Generic interface for the protocol contract being protected
-}
-
 contract ERC20DrainAssertion is Assertion {
-    // The ERC20 token being monitored
-    IERC20 public immutable token;
-
-    // The protocol contract whose token balance is being protected
-    address public immutable protocolContract;
-
     // Maximum percentage of token balance that can be withdrawn in a single tx (in basis points)
     // 1000 basis points = 10%
     uint256 public constant MAX_DRAIN_PERCENTAGE_BPS = 1000;
 
     // Denominator for basis points calculation
     uint256 public constant BPS_DENOMINATOR = 10000;
-
-    constructor(address _token, address _protocolContract) {
-        token = IERC20(_token);
-        protocolContract = _protocolContract;
-    }
 
     function triggers() external view override {
         // This assertion doesn't need specific function triggers since it monitors
@@ -41,13 +22,21 @@ contract ERC20DrainAssertion is Assertion {
     /// @notice Checks that the token balance doesn't decrease by more than MAX_DRAIN_PERCENTAGE_BPS in a single transaction
     /// @dev This assertion captures state before and after the transaction to detect excessive token outflows
     function assertERC20Drain() external {
+        // Get the assertion adopter address (this is the protocol contract)
+        address protocolContract = ph.getAssertionAdopter();
+
+        // For this assertion, we need to know which token to monitor
+        // In a real implementation, this would be configurable
+        // For now, we'll use a hardcoded token address - this should be made configurable
+        address tokenAddress = address(0x1234); // This should be configurable
+
         // Get token balance before the transaction
-        ph.forkPreState();
-        uint256 preBalance = token.balanceOf(protocolContract);
+        ph.forkPreTx();
+        uint256 preBalance = IERC20(tokenAddress).balanceOf(protocolContract);
 
         // Get token balance after the transaction
-        ph.forkPostState();
-        uint256 postBalance = token.balanceOf(protocolContract);
+        ph.forkPostTx();
+        uint256 postBalance = IERC20(tokenAddress).balanceOf(protocolContract);
 
         // If balance decreased, check if the decrease exceeds our threshold
         if (preBalance > postBalance) {
@@ -62,4 +51,12 @@ contract ERC20DrainAssertion is Assertion {
             );
         }
     }
+}
+
+interface IERC20 {
+    function balanceOf(address account) external view returns (uint256);
+}
+
+interface IProtocol {
+// Generic interface for the protocol contract being protected
 }

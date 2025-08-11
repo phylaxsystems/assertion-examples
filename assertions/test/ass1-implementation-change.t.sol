@@ -12,7 +12,6 @@ contract TestImplementationChange is CredibleTest, Test {
     address public initialImpl = address(0xdead);
     address public newImpl = address(0xbeef);
     address public user = address(0x1234);
-    string constant ASSERTION_LABEL = "ImplementationChangeAssertion";
 
     function setUp() public {
         protocol = new Implementation(initialImpl);
@@ -20,40 +19,28 @@ contract TestImplementationChange is CredibleTest, Test {
     }
 
     function test_assertionImplementationChanged() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        // cl will manage the correct assertion execution under the hood when the protocol is being called
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ImplementationChangeAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ImplementationChangeAssertion).creationCode,
+            fnSelector: ImplementationChangeAssertion.implementationChange.selector
+        });
 
         vm.prank(user);
         // This should revert because implementation is changing
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setImplementation.selector, abi.encode(newImpl))
-        );
+        vm.expectRevert("Implementation changed");
+        protocol.setImplementation(newImpl);
     }
 
     function test_assertionImplementationNotChanged() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(ImplementationChangeAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ImplementationChangeAssertion).creationCode,
+            fnSelector: ImplementationChangeAssertion.implementationChange.selector
+        });
 
         vm.prank(user);
-        // This should pass because we're setting the same implementation
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setImplementation.selector, abi.encode(initialImpl))
-        );
+        // The storage slot is not changed so the assertin is not triggered
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
+        protocol.setImplementation(initialImpl);
     }
 }

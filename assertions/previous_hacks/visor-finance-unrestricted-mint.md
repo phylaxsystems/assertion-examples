@@ -2,7 +2,7 @@
 
 This is a fairly simple bug that let anyone mint rewardTokens.
 
-Background: https://x.com/storming0x/status/1473321779250802693
+Background: <https://x.com/storming0x/status/1473321779250802693>
 
 # Description
 
@@ -34,7 +34,7 @@ function assertion_triggerDeposit_remainsSolvent() public view {
   uint256 postBalanceCollateral = visr.balanceOf(address(adopter));
   uint256 postTotalSupplyRewards = vvisr.totalSupply();
   uint256 postRatio = postBalanceCollateral / postTotalSupplyRewards;
-  ph.forkPreState();
+  ph.forkPreTx();
 
   uint256 preBalanceCollateral = visr.balanceOf(address(adopter));
   uint256 preTotalSupplyRewards = vvisr.totalSupply();

@@ -2,7 +2,7 @@
 
 Cream Finance suffered a 130M USD hack in October 2021.
 
-Detailed Analysis: https://www.chainalysis.com/blog/cream-finance-hack-analysis/
+Detailed Analysis: <https://www.chainalysis.com/blog/cream-finance-hack-analysis/>
 
 ## Description
 
@@ -53,7 +53,7 @@ function assertion_priceDeviation() public view {
         postPrices.push(priceOracle.getPrice(touchedAssets[i]));
     }
 
-    ph.forkPreState();
+    ph.forkPreTx();
 
     for (uint256 i = 0; i < touchedAssets.length; i++) {
         uint256 prePrice = priceOracle.getPrice(touchedAssets[i]);

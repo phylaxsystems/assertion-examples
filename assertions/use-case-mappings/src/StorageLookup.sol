@@ -14,7 +14,7 @@ contract Protocol {
 
 /// It is possible to get the value of any slot of the state before or after a transaction.
 /// This can be used to read private state variables.
-/// Note: It is possible to read the state before or after a transaction by using the forkPreState or forkPostState cheatcodes.
+/// Note: It is possible to read the state before or after a transaction by using the forkPreTx or forkPostTx cheatcodes.
 contract StorageLookupAssertion is Assertion {
     Protocol public protocol;
 

@@ -25,30 +25,30 @@ contract AerodromeVoterAssertions is Assertion {
     }
 
     function assertionEmergencyCouncilChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address previousEmergencyCouncil = voterContract.emergencyCouncil();
-        ph.forkPostState();
+        ph.forkPostTx();
         return voterContract.emergencyCouncil() != previousEmergencyCouncil;
     }
 
     function assertionEpochGovernorChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address previousEpochGovernor = voterContract.epochGovernor();
-        ph.forkPostState();
+        ph.forkPostTx();
         return voterContract.epochGovernor() != previousEpochGovernor;
     }
 
     function assertionFactoryRegistryChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address previousFactoryRegistry = voterContract.factoryRegistry();
-        ph.forkPostState();
+        ph.forkPostTx();
         return voterContract.factoryRegistry() != previousFactoryRegistry;
     }
 
     function assertionForwarderChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address previousForwarder = voterContract.forwarder();
-        ph.forkPostState();
+        ph.forkPostTx();
         return voterContract.forwarder() != previousForwarder;
     }
 }

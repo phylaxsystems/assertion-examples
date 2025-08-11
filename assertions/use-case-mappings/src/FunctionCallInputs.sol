@@ -62,9 +62,9 @@ contract FunctionCallInputsAssertion is Assertion {
         uint256 absDiff;
 
         for (uint256 i = 0; i < changedAddresses.length; i++) {
-            ph.forkPreState();
+            ph.forkPreTx();
             preBalance = protocol.balances(changedAddresses[i]);
-            ph.forkPostState();
+            ph.forkPostTx();
 
             if (balanceChanges[changedAddresses[i]] >= 0) {
                 absDiff = uint256(balanceChanges[changedAddresses[i]]);

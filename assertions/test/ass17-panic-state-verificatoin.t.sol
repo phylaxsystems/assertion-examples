@@ -11,7 +11,6 @@ contract TestPanicStateVerification is CredibleTest, Test {
     EmergencyPausable public protocol;
     address public user = address(0x1234);
     uint256 public initialBalance = 1000 ether;
-    string constant ASSERTION_LABEL = "EmergencyStateAssertion";
 
     function setUp() public {
         // Initialize the protocol with an initial balance
@@ -20,57 +19,48 @@ contract TestPanicStateVerification is CredibleTest, Test {
     }
 
     function test_assertionPanickedBalanceDecreases() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(EmergencyStateAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EmergencyStateAssertion).creationCode,
+            fnSelector: EmergencyStateAssertion.assertionPanickedCanOnlyDecreaseBalance.selector
+        });
 
         // Set the protocol to paused state
         protocol.setPaused(true);
 
         // Withdraw funds - should pass since balance is decreasing
         vm.prank(user);
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.withdraw.selector, abi.encode(500 ether))
-        );
+        protocol.withdraw(500 ether);
     }
 
     function test_assertionPanickedBalanceIncreases() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(EmergencyStateAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EmergencyStateAssertion).creationCode,
+            fnSelector: EmergencyStateAssertion.assertionPanickedCanOnlyDecreaseBalance.selector
+        });
 
         // Set the protocol to paused state
         protocol.setPaused(true);
 
         // Deposit funds - should revert since balance is increasing during pause
         vm.prank(user);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.deposit.selector, abi.encode(100 ether))
-        );
+        vm.expectRevert("Balance can only decrease when panicked");
+        protocol.deposit(100 ether);
     }
 
     function test_assertionNotPanickedBalanceIncreases() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(EmergencyStateAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EmergencyStateAssertion).creationCode,
+            fnSelector: EmergencyStateAssertion.assertionPanickedCanOnlyDecreaseBalance.selector
+        });
 
         // Make sure protocol is not paused
         protocol.setPaused(false);
 
         // Deposit funds - should pass since protocol is not paused
         vm.prank(user);
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.deposit.selector, abi.encode(100 ether))
-        );
+        protocol.deposit(100 ether);
     }
 }

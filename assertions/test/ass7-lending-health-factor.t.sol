@@ -9,7 +9,6 @@ import {LendingHealthFactorAssertion} from "../src/ass7-lending-health-factor.a.
 contract TestLendingHealthFactorAssertion is CredibleTest, Test {
     LendingHealthFactor public protocol;
     address public user = address(0x1234);
-    string constant ASSERTION_LABEL = "LendingHealthFactorAssertion";
 
     function setUp() public {
         protocol = new LendingHealthFactor();
@@ -17,32 +16,30 @@ contract TestLendingHealthFactorAssertion is CredibleTest, Test {
     }
 
     function test_assertionHealthyPosition() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(LendingHealthFactorAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(LendingHealthFactorAssertion).creationCode,
+            fnSelector: LendingHealthFactorAssertion.assertionSupply.selector
+        });
 
         vm.prank(user);
         // This should pass because the position remains healthy
-        cl.validate(ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.supply.selector, abi.encode(1, 100)));
+        protocol.supply(1, 100);
     }
 
     function test_assertionUnhealthyPosition() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(LendingHealthFactorAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(LendingHealthFactorAssertion).creationCode,
+            fnSelector: LendingHealthFactorAssertion.assertionBorrow.selector
+        });
 
         // First make the position unhealthy
         protocol.setHealthStatus(false);
 
         vm.prank(user);
         // This should revert because the position is unhealthy
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.borrow.selector, abi.encode(1, 100)));
+        vm.expectRevert("Borrow operation resulted in unhealthy position");
+        protocol.borrow(1, 100);
     }
 }

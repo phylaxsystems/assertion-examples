@@ -22,25 +22,25 @@ abstract contract BaalMolochv3Assertions is Assertion {
     }
 
     function assertionOwnerChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address previousOwner = baal.owner();
-        ph.forkPostState();
+        ph.forkPostTx();
         return baal.owner() != previousOwner;
     }
 
     // Don't set sponsorship threshold to 0
     function assertionSponsorshipThresholdNotZero() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 previousSponsorshipThreshold = baal.sponsorshipThreshold();
-        ph.forkPostState();
+        ph.forkPostTx();
         return baal.sponsorshipThreshold() != previousSponsorshipThreshold;
     }
 
     // Trusted forwarder changed to non-zero address
     function assertionTrustedForwarderNotZero() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address previousTrustedForwarder = baal.trustedForwarder();
-        ph.forkPostState();
+        ph.forkPostTx();
         return baal.trustedForwarder() != previousTrustedForwarder;
     }
 }

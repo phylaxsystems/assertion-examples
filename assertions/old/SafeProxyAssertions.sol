@@ -27,7 +27,7 @@ contract SafeProxyAssertions is Assertion {
 
     // The threshold should always be greater than zero and less than or equal to the number of owners
     function assertionValidThreshold() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 threshold = safe.getThreshold();
         address[] memory owners = safe.getOwners();
         return threshold > 0 && threshold <= owners.length;
@@ -35,9 +35,9 @@ contract SafeProxyAssertions is Assertion {
 
     // The threshold should never be set to one if threshold was previously greater than one
     function assertionThresholdNotOne() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 previousThreshold = safe.getThreshold();
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newThreshold = safe.getThreshold();
         if (previousThreshold > 1) {
             return newThreshold > 1;
@@ -47,16 +47,16 @@ contract SafeProxyAssertions is Assertion {
 
     // The nonce should always increase by 1
     function assertionInvariantNonce() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 prevNonce = safe.nonce();
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newNonce = safe.nonce();
         return newNonce == prevNonce + 1;
     }
 
     // Must not have two identical owners
     function assertionNoDuplicateOwners() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         address[] memory owners = safe.getOwners();
         for (uint256 i = 0; i < owners.length; i++) {
             for (uint256 j = i + 1; j < owners.length; j++) {
@@ -70,9 +70,9 @@ contract SafeProxyAssertions is Assertion {
 
     // The chain ID should never change
     function assertionChainIdNeverChanges() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 prevChainId = safe.getChainId();
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newChainId = safe.getChainId();
         return prevChainId == newChainId;
     }

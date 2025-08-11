@@ -17,7 +17,7 @@ contract StakingAssertions is Assertion, Staking, Test {
 
         PhEvm.CallInputs[] memory mintCalls = ph.getCallInputs(address(staking), Staking.mint.selector);
 
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 preTotalPending = staking.getPendingEthers();
 
         uint256 expectedPostTotalPending;
@@ -27,7 +27,7 @@ contract StakingAssertions is Assertion, Staking, Test {
             require(ctx.postTotalPending == ctx.preTotalPending + ctx.ethersToMint, "TotalPendingInvalid");
         }
 
-        ph.forkPostState();
+        ph.forkPostTx();
 
         require(staking.getPendingEthers() == expectedPostTotalPending, "ExpectedTotalPendingInvalid");
     }
