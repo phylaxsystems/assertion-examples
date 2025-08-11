@@ -14,7 +14,7 @@ contract ERC4626AssetsSharesAssertion is Assertion {
     }
 
     // Assert that the total assets are sufficient to back all shares
-    function assertionAssetsShares() external {
+    function assertionAssetsShares() external view {
         // Get the assertion adopter address
         IERC4626 adopter = IERC4626(ph.getAssertionAdopter());
 
