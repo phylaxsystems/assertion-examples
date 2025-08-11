@@ -55,4 +55,24 @@ contract TestOracleLiveness is CredibleTest, Test {
         vm.expectRevert("Oracle not updated within the allowed time window");
         dex.swap(tokenA, tokenB, swapAmount);
     }
+
+    function test_assertionDemonstratesBug() public {
+        // First, let's see what happens when oracle is fresh
+        vm.prank(user);
+        dex.swap(tokenA, tokenB, swapAmount);
+
+        // Now make oracle stale and try to swap again
+        vm.warp(block.timestamp + MAX_UPDATE_WINDOW + 1);
+
+        cl.assertion({
+            adopter: address(dex),
+            createData: type(OracleLivenessAssertion).creationCode,
+            fnSelector: OracleLivenessAssertion.assertionOracleLiveness.selector
+        });
+
+        vm.prank(user);
+        // This should revert because the assertion catches the stale oracle
+        vm.expectRevert("Oracle not updated within the allowed time window");
+        dex.swap(tokenA, tokenB, swapAmount);
+    }
 }

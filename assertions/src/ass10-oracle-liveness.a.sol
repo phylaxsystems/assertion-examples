@@ -23,7 +23,7 @@ contract OracleLivenessAssertion is Assertion {
         ph.forkPostTx();
 
         // Check if the oracle has been updated within the maximum allowed window
-        uint256 lastUpdateTime = IOracle(address(adopter)).lastUpdated();
+        uint256 lastUpdateTime = IOracle(adopter.oracle()).lastUpdated();
         uint256 currentTime = block.timestamp;
 
         // Verify the oracle data is fresh (updated within the time window)
@@ -37,4 +37,5 @@ interface IOracle {
 
 interface IDex {
     function swap(address tokenIn, address tokenOut, uint256 amountIn) external returns (uint256);
+    function oracle() external view returns (IOracle);
 }

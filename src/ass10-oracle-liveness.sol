@@ -58,9 +58,13 @@ contract Dex {
      * @param amountIn The amount of input tokens
      * @return The amount of output tokens received
      */
-    function swap(address tokenIn, address tokenOut, uint256 amountIn) external returns (uint256) {
+    function swap(address tokenIn, address tokenOut, uint256 amountIn)
+        external
+        pure
+        returns (address, address, uint256)
+    {
         // In a real implementation, this would use the oracle data to calculate the swap
         // For testing purposes, we just return the input amount
-        return amountIn;
+        return (tokenIn, tokenOut, amountIn);
     }
 }
