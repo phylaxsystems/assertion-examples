@@ -44,7 +44,8 @@ contract TestOwnerChange is CredibleTest, Test {
 
         // Set user as the caller
         vm.prank(user);
-        // This should pass because we're setting the same owner
+        // This reverts because no assertion was triggered
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
         protocol.setOwner(initialOwner);
     }
 
@@ -71,7 +72,8 @@ contract TestOwnerChange is CredibleTest, Test {
 
         // Set user as the caller
         vm.prank(user);
-        // This should pass because we're setting the same admin
+        // This reverts because no assertion was triggered
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
         protocol.setAdmin(initialAdmin);
     }
 }
