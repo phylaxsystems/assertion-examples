@@ -62,6 +62,15 @@ contract TestTwapDeviation is CredibleTest, Test {
         vm.prank(user);
         (bool success,) = address(batchUpdater).call(""); // Empty calldata triggers fallback
         require(success, "Batch price updates failed");
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
+
+        vm.prank(user);
+        batchUpdater.batchPriceUpdates();
     }
 
     function test_assertionMultiplePriceUpdatesWithInvalid() public {
@@ -79,6 +88,16 @@ contract TestTwapDeviation is CredibleTest, Test {
         vm.prank(user);
         (bool success,) = address(batchUpdater).call(""); // Empty calldata triggers fallback
         require(!success, "Price deviation from TWAP exceeds maximum allowed");
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
+
+        vm.prank(user);
+        vm.expectRevert("Price deviation from TWAP exceeds maximum allowed");
+        batchUpdater.batchPriceUpdates();
     }
 }
 
@@ -92,6 +111,20 @@ contract BatchPriceUpdates {
     fallback() external {
         // Make multiple price updates in a single transaction
         // Each update is within 5% of the initial price
+        pool.setPriceWithoutTwapUpdate(1020e18); // +2%
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
+        pool.setPriceWithoutTwapUpdate(1040e18); // +4%
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
+        pool.setPriceWithoutTwapUpdate(1020e18); // +2%
+        pool.setPriceWithoutTwapUpdate(1010e18); // +1%
+        pool.setPriceWithoutTwapUpdate(1000e18); // 0%
+        pool.setPriceWithoutTwapUpdate(990e18); // -1%
+        pool.setPriceWithoutTwapUpdate(980e18); // -2%
+        pool.setPriceWithoutTwapUpdate(970e18); // -3%
+    }
+
+    // For testing it's better to use a function call instead of a fallback to avoid low level call
+    function batchPriceUpdates() external {
         pool.setPriceWithoutTwapUpdate(1020e18); // +2%
         pool.setPriceWithoutTwapUpdate(1030e18); // +3%
         pool.setPriceWithoutTwapUpdate(1040e18); // +4%
@@ -125,5 +158,14 @@ contract InvalidBatchPriceUpdates {
         pool.setPriceWithoutTwapUpdate(1000e18); // 0%
         pool.setPriceWithoutTwapUpdate(990e18); // -1%
         pool.setPriceWithoutTwapUpdate(980e18); // -2%
+    }
+
+    // For testing it's better to use a function call instead of a fallback to avoid low level call
+    function batchPriceUpdates() external {
+        pool.setPriceWithoutTwapUpdate(1020e18); // +2%
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
+        pool.setPriceWithoutTwapUpdate(1040e18); // +4%
+        pool.setPriceWithoutTwapUpdate(1060e18); // +6% - This exceeds the 5% limit
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
     }
 }
