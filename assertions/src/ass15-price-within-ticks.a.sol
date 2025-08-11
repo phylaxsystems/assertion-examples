@@ -20,10 +20,6 @@ contract PriceWithinTicksAssertion is Assertion {
         // Get the assertion adopter address
         IUniswapV3Pool adopter = IUniswapV3Pool(ph.getAssertionAdopter());
 
-        // Get pre-swap state
-        ph.forkPreTx();
-        (, int24 preTick,,,,,) = adopter.slot0();
-
         // Get post-swap state
         ph.forkPostTx();
         (, int24 postTick,,,,,) = adopter.slot0();

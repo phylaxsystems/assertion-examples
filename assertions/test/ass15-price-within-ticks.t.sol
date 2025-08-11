@@ -85,7 +85,8 @@ contract TestPriceWithinTicks is CredibleTest, Test {
         // Set user as the caller
         vm.prank(user);
 
-        // This should pass because we're just changing the tick spacing, not the tick itself
+        // This doesn't trigger the assertion because the tick is not changed
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
         protocol.setTickSpacing(20);
     }
 }
