@@ -28,14 +28,14 @@ contract TestLendingHealthFactorAssertion is CredibleTest, Test {
     }
 
     function test_assertionUnhealthyPosition() public {
+        // First make the position unhealthy
+        protocol.setHealthStatus(false);
+
         cl.assertion({
             adopter: address(protocol),
             createData: type(LendingHealthFactorAssertion).creationCode,
             fnSelector: LendingHealthFactorAssertion.assertionBorrow.selector
         });
-
-        // First make the position unhealthy
-        protocol.setHealthStatus(false);
 
         vm.prank(user);
         // This should revert because the position is unhealthy
