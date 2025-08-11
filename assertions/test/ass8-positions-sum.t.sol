@@ -48,14 +48,14 @@ contract TestPositionSumAssertion is CredibleTest, Test {
     }
 
     function test_assertionMultipleDeposits() public {
+        // Create a batch depositor that will make multiple deposits
+        BatchDeposits batchDepositor = new BatchDeposits(address(protocol));
+
         cl.assertion({
             adopter: address(protocol),
             createData: type(PositionSumAssertion).creationCode,
             fnSelector: PositionSumAssertion.assertionPositionsSum.selector
         });
-
-        // Create a batch depositor that will make multiple deposits
-        BatchDeposits batchDepositor = new BatchDeposits(address(protocol));
 
         // Execute the batch deposits
         vm.prank(user1);

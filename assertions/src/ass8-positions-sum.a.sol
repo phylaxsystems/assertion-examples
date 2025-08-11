@@ -38,7 +38,7 @@ contract PositionSumAssertion is Assertion {
         // Process deposit function calls
         for (uint256 i = 0; i < callInputs.length; i++) {
             // Decode the function call input
-            (address user, uint256 amount) = abi.decode(callInputs[i].input, (address, uint256));
+            (, uint256 amount) = abi.decode(callInputs[i].input, (address, uint256));
 
             // Add the deposit amount to the position changes sum
             positionChangesSum += amount;
