@@ -49,36 +49,36 @@ contract TestTwapDeviation is CredibleTest, Test {
     }
 
     function test_assertionMultiplePriceUpdates() public {
+        // Create a batch updater that will make multiple price updates
+        BatchPriceUpdates batchUpdater = new BatchPriceUpdates(address(protocol));
+
         cl.assertion({
             adopter: address(protocol),
             createData: type(TwapDeviationAssertion).creationCode,
             fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
         });
 
-        // Create a batch updater that will make multiple price updates
-        BatchPriceUpdates batchUpdater = new BatchPriceUpdates(address(protocol));
-
         // Execute the batch updates
         vm.prank(user);
-        (bool success,) = address(batchUpdater).call(new bytes(0)); // Empty calldata triggers fallback
+        (bool success,) = address(batchUpdater).call(""); // Empty calldata triggers fallback
         require(success, "Batch price updates failed");
     }
 
     function test_assertionMultiplePriceUpdatesWithInvalid() public {
+        // Create a batch updater that will make multiple price updates
+        InvalidBatchPriceUpdates batchUpdater = new InvalidBatchPriceUpdates(address(protocol));
+
         cl.assertion({
             adopter: address(protocol),
             createData: type(TwapDeviationAssertion).creationCode,
             fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
         });
 
-        // Create a batch updater that will make multiple price updates
-        InvalidBatchPriceUpdates batchUpdater = new InvalidBatchPriceUpdates(address(protocol));
-
-        // Execute the batch updates
+        // Execute the batch updates that are expected to fail
+        // Due to low level call, the assertions is only triggered in the return statement
         vm.prank(user);
-        vm.expectRevert("Price deviation from TWAP exceeds maximum allowed");
-        (bool success,) = address(batchUpdater).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch price updates failed");
+        (bool success,) = address(batchUpdater).call(""); // Empty calldata triggers fallback
+        require(!success, "Price deviation from TWAP exceeds maximum allowed");
     }
 }
 
