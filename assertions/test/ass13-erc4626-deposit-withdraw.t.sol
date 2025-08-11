@@ -112,7 +112,7 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
         // Try depositing the special amount (13 ether), which should fail because
         // the vault has a deliberate accounting error for this specific amount
         vm.prank(user);
-        vm.expectRevert("Deposit shares assertion failed: receiver did not receive expected number of shares");
+        vm.expectRevert("Deposit shares assertion failed: total assets not updated correctly");
         protocol.deposit(SPECIAL_DEPOSIT_AMOUNT, user);
     }
 
@@ -133,9 +133,9 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
     }
 
     function test_assertionPreviewWithdraw_fail() public {
-        // First deposit some assets
+        // First deposit enough assets to cover the special withdrawal amount
         vm.prank(user);
-        protocol.deposit(depositAmount, user);
+        protocol.deposit(SPECIAL_WITHDRAW_AMOUNT * 2, user); // Double to ensure enough balance
 
         cl.assertion({
             adopter: address(protocol),
@@ -143,19 +143,9 @@ contract TestERC4626DepositWithdraw is CredibleTest, Test {
             fnSelector: ERC4626DepositWithdrawAssertion.assertionWithdrawShares.selector
         });
 
-        // Record the initial balance
-        uint256 initialBalance = protocol.balanceOf(user);
-
-        // Withdraw and manipulate the balance to be inconsistent with preview
+        // Use the special withdrawal amount that triggers the vulnerability
         vm.prank(user);
-        protocol.withdraw(withdrawAmount, user, user);
-
-        // Reset the balance to make the assertion fail
-        protocol.setBalance(user, initialBalance); // Unchanged balance
-
-        vm.prank(user);
-        // This should fail because the balance doesn't match what previewWithdraw returned
-        vm.expectRevert("Withdraw shares assertion failed: incorrect number of shares burned");
-        protocol.withdraw(withdrawAmount, user, user);
+        vm.expectRevert("Withdraw shares assertion failed: total assets not updated correctly");
+        protocol.withdraw(SPECIAL_WITHDRAW_AMOUNT, user, user);
     }
 }

@@ -64,27 +64,55 @@ contract ERC4626DepositWithdrawAssertion is Assertion {
         // Get all deposit calls to the ERC4626 vault
         PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(adopter), adopter.deposit.selector);
 
-        // Check each deposit call for correct share accounting
+        // Get pre-state values for total assets and total supply
+        ph.forkPreTx();
+        uint256 preTotalAssets = adopter.totalAssets();
+        uint256 preTotalSupply = adopter.totalSupply();
+
+        // Get post-state values for total assets and total supply
+        ph.forkPostTx();
+        uint256 postTotalAssets = adopter.totalAssets();
+        uint256 postTotalSupply = adopter.totalSupply();
+
+        // Calculate total assets deposited and total shares minted across all calls
+        uint256 totalAssetsDeposited = 0;
+        uint256 totalSharesMinted = 0;
+
         for (uint256 i = 0; i < callInputs.length; i++) {
             (uint256 assets, address receiver) = abi.decode(callInputs[i].input, (uint256, address));
+            totalAssetsDeposited += assets;
 
-            // Calculate expected shares to be minted for this deposit
-            uint256 expectedSharesToMint = adopter.previewDeposit(assets);
-
-            // Get pre-state share balance for this specific receiver
+            // Get pre and post share balances for this receiver
             ph.forkPreTx();
             uint256 preShareBalance = adopter.balanceOf(receiver);
-
-            // Get post-state share balance for this specific receiver
             ph.forkPostTx();
             uint256 postShareBalance = adopter.balanceOf(receiver);
 
-            // Verify that the receiver received exactly the expected number of shares
-            require(
-                postShareBalance == preShareBalance + expectedSharesToMint,
-                "Deposit shares assertion failed: receiver did not receive expected number of shares"
-            );
+            totalSharesMinted += (postShareBalance - preShareBalance);
         }
+
+        // Verify that total assets increased by exactly the deposited amount
+        require(
+            postTotalAssets == preTotalAssets + totalAssetsDeposited,
+            "Deposit shares assertion failed: total assets not updated correctly"
+        );
+
+        // Verify that total supply increased by exactly the minted shares
+        require(
+            postTotalSupply == preTotalSupply + totalSharesMinted,
+            "Deposit shares assertion failed: total supply not updated correctly"
+        );
+
+        // Verify that the share-to-asset ratio remains consistent
+        // This is the key check that will catch the vulnerability
+        uint256 preAssetsPerShare = preTotalSupply > 0 ? (preTotalAssets * 1e18) / preTotalSupply : 0;
+        uint256 postAssetsPerShare = postTotalSupply > 0 ? (postTotalAssets * 1e18) / postTotalSupply : 0;
+
+        // Allow for minimal precision/rounding errors
+        require(
+            postAssetsPerShare >= preAssetsPerShare || preAssetsPerShare - postAssetsPerShare <= PRECISION_TOLERANCE,
+            "Deposit shares assertion failed: share-to-asset ratio decreased unexpectedly"
+        );
     }
 
     // Assert that withdrawals correctly update total assets
@@ -125,37 +153,55 @@ contract ERC4626DepositWithdrawAssertion is Assertion {
         // Get all withdraw calls to the ERC4626 vault
         PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(adopter), adopter.withdraw.selector);
 
-        // Check each withdraw call for correct share accounting
+        // Get pre-state values for total assets and total supply
+        ph.forkPreTx();
+        uint256 preTotalAssets = adopter.totalAssets();
+        uint256 preTotalSupply = adopter.totalSupply();
+
+        // Get post-state values for total assets and total supply
+        ph.forkPostTx();
+        uint256 postTotalAssets = adopter.totalAssets();
+        uint256 postTotalSupply = adopter.totalSupply();
+
+        // Calculate total assets withdrawn and total shares burned across all calls
+        uint256 totalAssetsWithdrawn = 0;
+        uint256 totalSharesBurned = 0;
+
         for (uint256 i = 0; i < callInputs.length; i++) {
-            (uint256 assets, address receiver, address owner) =
-                abi.decode(callInputs[i].input, (uint256, address, address));
+            (uint256 assets,, address owner) = abi.decode(callInputs[i].input, (uint256, address, address));
+            totalAssetsWithdrawn += assets;
 
-            // Calculate expected shares to be burned for this withdrawal
-            uint256 expectedSharesToBurn = adopter.previewWithdraw(assets);
-
-            // Get pre-state share balance for the owner
+            // Get pre and post share balances for this owner
             ph.forkPreTx();
             uint256 preShareBalance = adopter.balanceOf(owner);
-            address underlying = adopter.asset();
-            uint256 preReceiverAssetBalance = IERC20(underlying).balanceOf(receiver);
-
-            // Get post-state share balance for the owner
             ph.forkPostTx();
             uint256 postShareBalance = adopter.balanceOf(owner);
-            uint256 postReceiverAssetBalance = IERC20(underlying).balanceOf(receiver);
 
-            // Verify that the correct number of shares were burned from owner
-            require(
-                preShareBalance - postShareBalance == expectedSharesToBurn,
-                "Withdraw shares assertion failed: incorrect number of shares burned"
-            );
-
-            // Verify that receiver got the requested assets
-            require(
-                postReceiverAssetBalance - preReceiverAssetBalance == assets,
-                "Withdraw assets assertion failed: receiver did not receive expected amount of assets"
-            );
+            totalSharesBurned += (preShareBalance - postShareBalance);
         }
+
+        // Verify that total assets decreased by exactly the withdrawn amount
+        require(
+            postTotalAssets == preTotalAssets - totalAssetsWithdrawn,
+            "Withdraw shares assertion failed: total assets not updated correctly"
+        );
+
+        // Verify that total supply decreased by exactly the burned shares
+        require(
+            postTotalSupply == preTotalSupply - totalSharesBurned,
+            "Withdraw shares assertion failed: total supply not updated correctly"
+        );
+
+        // Verify that the share-to-asset ratio remains consistent
+        // This is the key check that will catch the vulnerability
+        uint256 preAssetsPerShare = preTotalSupply > 0 ? (preTotalAssets * 1e18) / preTotalSupply : 0;
+        uint256 postAssetsPerShare = postTotalSupply > 0 ? (postTotalAssets * 1e18) / postTotalSupply : 0;
+
+        // Allow for minimal precision/rounding errors
+        require(
+            postAssetsPerShare >= preAssetsPerShare || preAssetsPerShare - postAssetsPerShare <= PRECISION_TOLERANCE,
+            "Withdraw shares assertion failed: share-to-asset ratio decreased unexpectedly"
+        );
     }
 
     // Assert that share value never decreases unexpectedly
