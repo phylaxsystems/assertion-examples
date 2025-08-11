@@ -131,15 +131,15 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         vm.prank(user2);
         vault.deposit(200 ether, user2);
 
+        // Get user1's share balance for redeem test
+        uint256 user1Shares = vault.balanceOf(user1);
+        uint256 sharesToRedeem = user1Shares / 4; // Redeem 25% of shares
+
         cl.assertion({
             adopter: address(vault),
             createData: type(ERC4626OperationsAssertion).creationCode,
             fnSelector: ERC4626OperationsAssertion.assertionBatchOperationsConsistency.selector
         });
-
-        // Get user1's share balance for redeem test
-        uint256 user1Shares = vault.balanceOf(user1);
-        uint256 sharesToRedeem = user1Shares / 4; // Redeem 25% of shares
 
         // Test redeem function
         vm.prank(user1);
@@ -187,7 +187,7 @@ contract TestERC4626OperationsAssertion is CredibleTest, Test {
         // Trigger the buggy deposit with value 13 - this should cause assertion to fail
         // The deposit function mints 10% extra shares when assets == 13
         vm.prank(user1);
-        vm.expectRevert("Deposit assertion failed: Vault assets did not increase by the correct amount");
+        vm.expectRevert("Deposit assertion failed: User did not receive the correct number of shares");
         vault.deposit(13 ether, user1);
     }
 

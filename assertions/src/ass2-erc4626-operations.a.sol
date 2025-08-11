@@ -125,29 +125,35 @@ contract ERC4626OperationsAssertion is Assertion {
         // Get the assertion adopter address
         CoolVault adopter = CoolVault(ph.getAssertionAdopter());
 
-        // create a snapshot of the blockchain state before the transaction
-        ph.forkPreTx();
-
-        // get the balance of the vault before the transaction
-        uint256 vaultAssetPreBalance = adopter.totalAssets();
-
+        // Get all deposit calls to the vault
         PhEvm.CallInputs[] memory inputs = ph.getCallInputs(address(adopter), adopter.deposit.selector);
 
-        uint256 totalBalanceDeposited = 0;
         for (uint256 i = 0; i < inputs.length; i++) {
-            (uint256 assets,) = abi.decode(inputs[i].input, (uint256, address));
-            totalBalanceDeposited += assets;
+            (uint256 assets, address receiver) = abi.decode(inputs[i].input, (uint256, address));
+
+            // Check pre-state
+            ph.forkPreTx();
+            uint256 vaultAssetPreBalance = adopter.totalAssets();
+            uint256 userSharesPreBalance = adopter.balanceOf(receiver);
+            uint256 expectedShares = adopter.previewDeposit(assets);
+
+            // Check post-state
+            ph.forkPostTx();
+            uint256 vaultAssetPostBalance = adopter.totalAssets();
+            uint256 userSharesPostBalance = adopter.balanceOf(receiver);
+
+            // Verify vault assets increased by exactly the deposited amount
+            require(
+                vaultAssetPostBalance == vaultAssetPreBalance + assets,
+                "Deposit assertion failed: Vault assets did not increase by the correct amount"
+            );
+
+            // Verify user received exactly the expected number of shares
+            require(
+                userSharesPostBalance == userSharesPreBalance + expectedShares,
+                "Deposit assertion failed: User did not receive the correct number of shares"
+            );
         }
-
-        // get the snapshot of state after the transaction
-        ph.forkPostTx();
-
-        uint256 vaultAssetPostBalance = adopter.totalAssets();
-
-        require(
-            vaultAssetPostBalance == vaultAssetPreBalance + totalBalanceDeposited,
-            "Deposit assertion failed: Vault assets did not increase by the correct amount"
-        );
     }
 
     /**

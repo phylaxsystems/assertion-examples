@@ -20,11 +20,10 @@ contract StakingAssertions is Assertion, Staking, Test {
         ph.forkPreTx();
         uint256 preTotalPending = staking.getPendingEthers();
 
-        uint256 expectedPostTotalPending;
+        uint256 expectedPostTotalPending = preTotalPending;
         for (uint256 i = 0; i < mintCalls.length; i++) {
             (uint256 minToMint,) = abi.decode(mintCalls[i].input, (uint256, uint256));
             expectedPostTotalPending += minToMint;
-            require(ctx.postTotalPending == ctx.preTotalPending + ctx.ethersToMint, "TotalPendingInvalid");
         }
 
         ph.forkPostTx();
