@@ -34,14 +34,14 @@ contract TestPanicStateVerification is CredibleTest, Test {
     }
 
     function test_assertionPanickedBalanceIncreases() public {
+        // Set the protocol to paused state
+        protocol.setPaused(true);
+
         cl.assertion({
             adopter: address(protocol),
             createData: type(EmergencyStateAssertion).creationCode,
             fnSelector: EmergencyStateAssertion.assertionPanickedCanOnlyDecreaseBalance.selector
         });
-
-        // Set the protocol to paused state
-        protocol.setPaused(true);
 
         // Deposit funds - should revert since balance is increasing during pause
         vm.prank(user);
