@@ -10,3 +10,10 @@ test = "assertions/test"
 out = "assertions/out"
 libs = ["lib"]
 solc = "0.8.29"
+
+[profile.use-case-mappings]
+src = "assertions/use-case-mappings/src"
+test = "assertions/use-case-mappings/test"
+out = "assertions/use-case-mappings/out"
+libs = ["lib"]
+solc = "0.8.29"
