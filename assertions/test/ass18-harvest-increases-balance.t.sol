@@ -61,36 +61,34 @@ contract TestHarvestIncreasesBalance is CredibleTest, Test {
     }
 
     function test_assertionBatchHarvests() public {
-        cl.assertion({
-            adopter: address(protocol),
-            createData: type(BeefyHarvestAssertion).creationCode,
-            fnSelector: BeefyHarvestAssertion.assertionHarvestIncreasesBalance.selector
-        });
-
         // Create a batch harvester that will make multiple harvests
         BatchHarvests batchHarvester = new BatchHarvests(address(protocol));
 
-        // Execute the batch harvests
-        vm.prank(user);
-        (bool success,) = address(batchHarvester).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch harvests failed");
-    }
-
-    function test_assertionBatchHarvestsWithBadHarvest() public {
         cl.assertion({
             adopter: address(protocol),
             createData: type(BeefyHarvestAssertion).creationCode,
             fnSelector: BeefyHarvestAssertion.assertionHarvestIncreasesBalance.selector
         });
 
+        // Execute the batch harvests
+        vm.prank(user);
+        batchHarvester.batchHarvest();
+    }
+
+    function test_assertionBatchHarvestsWithBadHarvest() public {
         // Create a batch harvester that will include a bad harvest
         BatchHarvestsWithBadHarvest batchHarvester = new BatchHarvestsWithBadHarvest(address(protocol));
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(BeefyHarvestAssertion).creationCode,
+            fnSelector: BeefyHarvestAssertion.assertionHarvestIncreasesBalance.selector
+        });
 
         // Execute the batch harvests with bad harvest
         vm.prank(user);
         vm.expectRevert("Invalid balance decrease detected during harvest");
-        (bool success,) = address(batchHarvester).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch harvests failed");
+        batchHarvester.batchHarvest();
     }
 }
 
@@ -101,7 +99,7 @@ contract BatchHarvests {
         vault = BeefyVault(vault_);
     }
 
-    fallback() external {
+    function batchHarvest() external {
         // Make multiple harvests in a single transaction
         vault.harvest(false); // First harvest
         vault.harvest(false); // Second harvest
@@ -118,7 +116,7 @@ contract BatchHarvestsWithBadHarvest {
         vault = BeefyVault(vault_);
     }
 
-    fallback() external {
+    function batchHarvest() external {
         // Make multiple harvests including a bad one
         vault.harvest(false); // First harvest (good)
         vault.harvest(false); // Second harvest (good)
