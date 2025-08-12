@@ -38,7 +38,7 @@ contract TestERC20Drain is CredibleTest, Test {
     function test_assertionDrainWithinLimit() public {
         cl.assertion({
             adopter: address(protocol),
-            createData: type(ERC20DrainAssertion).creationCode,
+            createData: abi.encodePacked(type(ERC20DrainAssertion).creationCode, abi.encode(address(token))),
             fnSelector: ERC20DrainAssertion.assertERC20Drain.selector
         });
 
@@ -51,7 +51,7 @@ contract TestERC20Drain is CredibleTest, Test {
     function test_assertionDrainExceedsLimit() public {
         cl.assertion({
             adopter: address(protocol),
-            createData: type(ERC20DrainAssertion).creationCode,
+            createData: abi.encodePacked(type(ERC20DrainAssertion).creationCode, abi.encode(address(token))),
             fnSelector: ERC20DrainAssertion.assertERC20Drain.selector
         });
 
@@ -65,7 +65,7 @@ contract TestERC20Drain is CredibleTest, Test {
     function test_assertionDepositDoesNotRevert() public {
         cl.assertion({
             adopter: address(protocol),
-            createData: type(ERC20DrainAssertion).creationCode,
+            createData: abi.encodePacked(type(ERC20DrainAssertion).creationCode, abi.encode(address(token))),
             fnSelector: ERC20DrainAssertion.assertERC20Drain.selector
         });
 

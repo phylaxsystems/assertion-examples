@@ -12,6 +12,12 @@ contract ERC20DrainAssertion is Assertion {
     // Denominator for basis points calculation
     uint256 public constant BPS_DENOMINATOR = 10000;
 
+    address public tokenAddress;
+
+    constructor(address tokenAddress_) {
+        tokenAddress = tokenAddress_;
+    }
+
     function triggers() external view override {
         // This assertion doesn't need specific function triggers since it monitors
         // the overall balance change regardless of which function caused it
@@ -23,20 +29,15 @@ contract ERC20DrainAssertion is Assertion {
     /// @dev This assertion captures state before and after the transaction to detect excessive token outflows
     function assertERC20Drain() external {
         // Get the assertion adopter address (this is the protocol contract)
-        address protocolContract = ph.getAssertionAdopter();
-
-        // For this assertion, we need to know which token to monitor
-        // In a real implementation, this would be configurable
-        // For now, we'll use a hardcoded token address - this should be made configurable
-        address tokenAddress = address(0x1234); // This should be configurable
+        ITokenVault protocol = ITokenVault(ph.getAssertionAdopter());
 
         // Get token balance before the transaction
         ph.forkPreTx();
-        uint256 preBalance = IERC20(tokenAddress).balanceOf(protocolContract);
+        uint256 preBalance = IERC20(tokenAddress).balanceOf(address(protocol));
 
         // Get token balance after the transaction
         ph.forkPostTx();
-        uint256 postBalance = IERC20(tokenAddress).balanceOf(protocolContract);
+        uint256 postBalance = IERC20(tokenAddress).balanceOf(address(protocol));
 
         // If balance decreased, check if the decrease exceeds our threshold
         if (preBalance > postBalance) {
@@ -57,6 +58,8 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
-interface IProtocol {
-// Generic interface for the protocol contract being protected
+interface ITokenVault {
+    function withdraw(address recipient, uint256 amount) external;
+    function getBalance() external view returns (uint256);
+    function deposit(uint256 amount) external;
 }
