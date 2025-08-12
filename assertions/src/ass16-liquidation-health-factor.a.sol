@@ -5,21 +5,16 @@ import {Assertion} from "credible-std/Assertion.sol";
 import {PhEvm} from "credible-std/PhEvm.sol";
 
 contract LiquidationHealthFactorAssertion is Assertion {
-    // Health factors are typically scaled by 1e18 for precision
-    // This allows for fine-grained health factor calculations without floating point
-    uint256 constant LIQUIDATION_THRESHOLD = 1e18; // 1.0
-    uint256 constant MIN_HEALTH_FACTOR = 1.02e18; // 1.02 - small buffer above liquidation
-
-    // Maximum amount that can be liquidated in a single transaction
-    // This helps prevent large liquidations that could destabilize the protocol
-    uint256 constant MAX_LIQUIDATION_AMOUNT = 1000e18; // Example value, adjust based on protocol
+    // Simple health factor constants (no scaling)
+    uint256 constant LIQUIDATION_THRESHOLD = 100; // Below this = liquidatable
+    uint256 constant MIN_HEALTH_FACTOR = 120; // Minimum safe health factor after liquidation
 
     function triggers() external view override {
         // Register trigger for liquidation function calls
         registerCallTrigger(this.assertHealthFactor.selector, ILendingProtocol.liquidate.selector);
     }
 
-    // Make sure that liquidation can't happen if the position is healthy
+    // Check that liquidation can't happen if the position is healthy
     // Check that the health factor is improved after liquidation
     function assertHealthFactor() external {
         // Get the assertion adopter address
@@ -30,58 +25,40 @@ contract LiquidationHealthFactorAssertion is Assertion {
 
         for (uint256 i = 0; i < callInputs.length; i++) {
             address borrower;
-            ILendingProtocol.MarketParams memory marketParams;
             uint256 seizedAssets;
-            uint256 repaidShares;
+            uint256 repaidDebt;
 
             // Decode liquidation parameters
-            (marketParams, borrower, seizedAssets, repaidShares,) =
-                abi.decode(callInputs[i].input, (ILendingProtocol.MarketParams, address, uint256, uint256, bytes));
+            (borrower, seizedAssets, repaidDebt) = abi.decode(callInputs[i].input, (address, uint256, uint256));
 
             // Validate liquidation amounts
             require(seizedAssets > 0, "Zero assets seized");
-            require(repaidShares > 0, "Zero shares repaid");
-            require(seizedAssets <= MAX_LIQUIDATION_AMOUNT, "Liquidation amount too large");
+            require(repaidDebt > 0, "Zero debt repaid");
 
             // Check health factor before liquidation
             ph.forkPreTx();
-            uint256 preHealthFactor = adopter.healthFactor(marketParams, borrower);
+            uint256 preHealthFactor = adopter.healthFactor(borrower);
             require(preHealthFactor <= LIQUIDATION_THRESHOLD, "Account not eligible for liquidation");
 
             // Check health factor after liquidation
             ph.forkPostTx();
-            uint256 postHealthFactor = adopter.healthFactor(marketParams, borrower);
+            uint256 postHealthFactor = adopter.healthFactor(borrower);
 
             // Verify the liquidation actually improved the position's health
             require(postHealthFactor > preHealthFactor, "Health factor did not improve after liquidation");
 
             // Ensure the position is now in a safe state above the minimum required health factor
-            // This prevents partial liquidations that leave positions in a dangerous state
             require(postHealthFactor >= MIN_HEALTH_FACTOR, "Position still unhealthy after liquidation");
         }
     }
 }
 
-// Using a generic lending protocol interface
+// Simplified lending protocol interface
 interface ILendingProtocol {
-    // MarketParams contains the market identifier
-    // Using nested structs to match common lending protocol patterns
-    struct MarketParams {
-        Id id;
-    }
+    function liquidate(address borrower, uint256 seizedAssets, uint256 repaidDebt)
+        external
+        returns (uint256, uint256);
 
-    struct Id {
-        uint256 marketId;
-    }
-
-    function liquidate(
-        MarketParams memory marketParams,
-        address borrower,
-        uint256 seizedAssets,
-        uint256 repaidShares,
-        bytes memory data
-    ) external returns (uint256, uint256);
-
-    function isHealthy(MarketParams memory marketParams, address borrower) external view returns (bool);
-    function healthFactor(MarketParams memory marketParams, address borrower) external view returns (uint256);
+    function isHealthy(address user) external view returns (bool);
+    function healthFactor(address user) external view returns (uint256);
 }
