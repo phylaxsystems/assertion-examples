@@ -21,7 +21,7 @@ contract LiquidationHealthFactorAssertion is Assertion {
         ILendingProtocol adopter = ILendingProtocol(ph.getAssertionAdopter());
 
         // Get all liquidation calls in the transaction
-        PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(adopter), adopter.liquidate.selector);
+        PhEvm.CallInputs[] memory callInputs = ph.getAllCallInputs(address(adopter), adopter.liquidate.selector);
 
         for (uint256 i = 0; i < callInputs.length; i++) {
             address borrower;
