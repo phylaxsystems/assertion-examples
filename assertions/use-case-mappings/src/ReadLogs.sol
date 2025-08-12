@@ -27,12 +27,6 @@ contract Protocol {
 /// Log data can often be used to assert the expected outcome of state changes.
 /// Note: It needs to be made sure that logs are emitted for every corresponding state change.
 contract ReadLogsAssertion is Assertion {
-    Protocol public protocol;
-
-    constructor(Protocol protocol_) {
-        protocol = protocol_;
-    }
-
     function triggers() public view override {
         registerCallTrigger(this.assertionReadLogs.selector);
     }
@@ -41,6 +35,7 @@ contract ReadLogsAssertion is Assertion {
     address[] changedAddresses;
 
     function assertionReadLogs() public {
+        Protocol protocol = Protocol(ph.getAssertionAdopter());
         PhEvm.Log[] memory logs = ph.getLogs();
 
         for (uint256 i = 0; i < logs.length; i++) {

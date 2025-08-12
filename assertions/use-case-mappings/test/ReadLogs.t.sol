@@ -14,15 +14,12 @@ contract ReadLogsTest is CredibleTest, Test {
 
     function test_assertionReadLogs() public {
         protocol.mint(address(0x1), 100);
-        cl.addAssertion(
-            "ReadLogsAssertion", address(protocol), type(ReadLogsAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(ReadLogsAssertion).creationCode,
+            fnSelector: ReadLogsAssertion.assertionReadLogs.selector
+        });
         vm.prank(address(0x1));
-        cl.validate(
-            "ReadLogsAssertion",
-            address(protocol),
-            0,
-            abi.encodeWithSelector(Protocol.transfer.selector, address(0x2), 100)
-        );
+        protocol.transfer(address(0x2), 100);
     }
 }

@@ -27,19 +27,15 @@ contract Protocol {
 /// Currently, it is only possible to fetch call inputs for a specific function selector.
 /// There is no ordering guarantee between call inputs of different function selectors.
 contract FunctionCallInputsAssertion is Assertion {
-    Protocol public protocol;
     mapping(address => int256) public balanceChanges;
     address[] changedAddresses;
-
-    constructor(Protocol protocol_) {
-        protocol = protocol_;
-    }
 
     function triggers() public view override {
         registerCallTrigger(this.assertionFunctionCallInputs.selector);
     }
 
     function assertionFunctionCallInputs() public {
+        Protocol protocol = Protocol(ph.getAssertionAdopter());
         PhEvm.CallInputs[] memory callInputs = ph.getCallInputs(address(protocol), protocol.transfer.selector);
 
         for (uint256 i = 0; i < callInputs.length; i++) {
