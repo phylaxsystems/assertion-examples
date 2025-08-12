@@ -36,12 +36,12 @@ contract LiquidationHealthFactorAssertion is Assertion {
             require(repaidDebt > 0, "Zero debt repaid");
 
             // Check health factor before liquidation
-            ph.forkPreTx();
+            ph.forkPreCall(callInputs[i].id);
             uint256 preHealthFactor = adopter.healthFactor(borrower);
             require(preHealthFactor <= LIQUIDATION_THRESHOLD, "Account not eligible for liquidation");
 
             // Check health factor after liquidation
-            ph.forkPostTx();
+            ph.forkPostCall(callInputs[i].id);
             uint256 postHealthFactor = adopter.healthFactor(borrower);
 
             // Verify the liquidation actually improved the position's health
