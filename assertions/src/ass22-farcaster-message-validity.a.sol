@@ -61,11 +61,11 @@ contract FarcasterProtocolAssertion is Assertion {
             (string memory username, address owner) = abi.decode(callInputs[i].input, (string, address));
 
             // Check pre-registration state to ensure username isn't already taken
-            ph.forkPreTx();
+            ph.forkPreCall(callInputs[i].id);
             require(!adopter.isRegistered(username), "Security violation: username already registered");
 
             // Check post-registration state to ensure registration succeeded and owner is correct
-            ph.forkPostTx();
+            ph.forkPostCall(callInputs[i].id);
             require(adopter.isRegistered(username), "Registration failed to complete");
             require(
                 adopter.getUsernameOwner(username) == owner, "Security violation: owner mismatch after registration"
@@ -87,7 +87,7 @@ contract FarcasterProtocolAssertion is Assertion {
             address user = message.author;
 
             // Check state before posting to validate rate limits
-            ph.forkPreTx();
+            ph.forkPreCall(callInputs[i].id);
 
             // Ensure cooldown between posts is respected
             uint256 lastPostTime = adopter.getLastPostTimestamp(user);
