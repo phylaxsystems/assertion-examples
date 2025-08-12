@@ -40,41 +40,39 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
 
         vm.prank(user);
         // This should revert because the price exceeds acceptable deviation (20% > 10%)
-        vm.expectRevert("Oracle intra-tx price deviation exceeds threshold");
+        vm.expectRevert("Oracle post-state price deviation exceeds threshold");
         protocol.updatePrice(unacceptablePrice);
     }
 
     function test_assertionBatchAcceptablePriceUpdates() public {
-        cl.assertion({
-            adopter: address(protocol),
-            createData: type(IntraTxOracleDeviationAssertion).creationCode,
-            fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
-        });
-
         // Create a batch updater with all acceptable price updates
         BatchPriceUpdatesAcceptable batchUpdater = new BatchPriceUpdatesAcceptable(address(protocol));
 
-        // Execute the batch updates
-        vm.prank(user);
-        (bool success,) = address(batchUpdater).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch price updates failed");
-    }
-
-    function test_assertionBatchUnacceptablePriceUpdates() public {
         cl.assertion({
             adopter: address(protocol),
             createData: type(IntraTxOracleDeviationAssertion).creationCode,
             fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
         });
 
+        // Execute the batch updates
+        vm.prank(user);
+        batchUpdater.batchPriceUpdates();
+    }
+
+    function test_assertionBatchUnacceptablePriceUpdates() public {
         // Create a batch updater with an unacceptable price update
         BatchPriceUpdatesUnacceptable batchUpdater = new BatchPriceUpdatesUnacceptable(address(protocol));
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(IntraTxOracleDeviationAssertion).creationCode,
+            fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
+        });
 
         // Execute the batch updates, expect revert due to assertion
         vm.prank(user);
         vm.expectRevert("Oracle intra-tx price deviation exceeds threshold");
-        (bool success,) = address(batchUpdater).call(new bytes(0)); // Empty calldata triggers fallback
-        require(success, "Batch price updates failed");
+        batchUpdater.batchPriceUpdates();
     }
 }
 
@@ -85,7 +83,7 @@ contract BatchPriceUpdatesAcceptable {
         oracle = Oracle(oracle_);
     }
 
-    fallback() external {
+    function batchPriceUpdates() external {
         // All price updates are within 10% deviation from initial price
         oracle.updatePrice(1050); // +5%
         oracle.updatePrice(1000); // back to initial
@@ -105,7 +103,7 @@ contract BatchPriceUpdatesUnacceptable {
         oracle = Oracle(oracle_);
     }
 
-    fallback() external {
+    function batchPriceUpdates() external {
         // Start with acceptable updates
         oracle.updatePrice(1050); // +5%
         oracle.updatePrice(1075); // +7.5%
