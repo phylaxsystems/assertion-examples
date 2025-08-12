@@ -87,6 +87,7 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         protocol.postMessage(validMessage);
     }
 
+    // TODO: This is panicking the application due to the slicing error
     function test_assertionUsernameUniqueness() public {
         cl.assertion({
             adopter: address(protocol),
@@ -112,19 +113,19 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         protocol.register(testUsername, user);
     }
 
+    // TODO: This is panicking the application due to the slicing error
     function test_assertionRateLimit() public {
-        cl.assertion({
-            adopter: address(protocol),
-            createData: type(FarcasterProtocolAssertion).creationCode,
-            fnSelector: FarcasterProtocolAssertion.assertRateLimit.selector
-        });
-
         // Add time to avoid initial rate limit issues
         vm.warp(block.timestamp + 2 minutes);
 
         // First, post a message to set the last post timestamp
         vm.prank(user);
         protocol.postMessage(validMessage);
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(FarcasterProtocolAssertion).creationCode,
+            fnSelector: FarcasterProtocolAssertion.assertRateLimit.selector
+        });
 
         // Jump forward, but not enough to pass the cooldown
         skip(30 seconds); // Cooldown is 1 minute in the assertion
