@@ -43,8 +43,11 @@ contract IntraTxOracleDeviationAssertion is Assertion {
 
         // Check each price update to ensure none deviate more than allowed from initial price
         for (uint256 i = 0; i < priceUpdates.length; i++) {
-            // Decode the price from the function call data
-            uint256 updatedPrice = abi.decode(priceUpdates[i].input, (uint256));
+            ph.forkPostCall(priceUpdates[i].id);
+
+            // Call the price function at the given frame in the call stack
+            // TODO: This is panicking the application due to the slicing error
+            uint256 updatedPrice = adopter.price();
 
             // Verify each update is within allowed deviation from initial pre-state price
             require(
