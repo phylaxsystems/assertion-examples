@@ -13,7 +13,6 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
     uint256 public acceptablePrice = 1100; // 10% increase, which is acceptable
     uint256 public unacceptablePrice = 1200; // 20% increase, which exceeds threshold
     address public user = address(0x1234);
-    string constant ASSERTION_LABEL = "IntraTxOracleDeviationAssertion";
 
     function setUp() public {
         protocol = new Oracle(initialPrice);
@@ -21,83 +20,62 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
     }
 
     function test_assertionAcceptableDeviation() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(IntraTxOracleDeviationAssertion).creationCode,
+            fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
+        });
 
         vm.prank(user);
         // This should pass because the price is within acceptable deviation (10%)
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.updatePrice.selector, abi.encode(acceptablePrice))
-        );
+        protocol.updatePrice(acceptablePrice);
     }
 
     function test_assertionUnacceptableDeviation() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(IntraTxOracleDeviationAssertion).creationCode,
+            fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
+        });
 
         vm.prank(user);
         // This should revert because the price exceeds acceptable deviation (20% > 10%)
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.updatePrice.selector, abi.encode(unacceptablePrice))
-        );
+        vm.expectRevert("Oracle post-state price deviation exceeds threshold");
+        protocol.updatePrice(unacceptablePrice);
     }
 
     function test_assertionBatchAcceptablePriceUpdates() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
-        );
-
         // Create a batch updater with all acceptable price updates
         BatchPriceUpdatesAcceptable batchUpdater = new BatchPriceUpdatesAcceptable(address(protocol));
+        assertEq(protocol.price(), initialPrice);
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(IntraTxOracleDeviationAssertion).creationCode,
+            fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
+        });
 
         // Execute the batch updates
         vm.prank(user);
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchUpdater),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        batchUpdater.batchPriceUpdates();
+
+        assertEq(protocol.price(), 900);
     }
 
     function test_assertionBatchUnacceptablePriceUpdates() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(IntraTxOracleDeviationAssertion).creationCode, abi.encode(protocol)
-        );
-
         // Create a batch updater with an unacceptable price update
         BatchPriceUpdatesUnacceptable batchUpdater = new BatchPriceUpdatesUnacceptable(address(protocol));
 
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(IntraTxOracleDeviationAssertion).creationCode,
+            fnSelector: IntraTxOracleDeviationAssertion.assertOracleDeviation.selector
+        });
+
         // Execute the batch updates, expect revert due to assertion
         vm.prank(user);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchUpdater),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        vm.expectRevert("Oracle intra-tx price deviation exceeds threshold");
+        batchUpdater.batchPriceUpdates();
     }
 }
 
@@ -108,7 +86,7 @@ contract BatchPriceUpdatesAcceptable {
         oracle = Oracle(oracle_);
     }
 
-    fallback() external {
+    function batchPriceUpdates() external {
         // All price updates are within 10% deviation from initial price
         oracle.updatePrice(1050); // +5%
         oracle.updatePrice(1000); // back to initial
@@ -117,7 +95,6 @@ contract BatchPriceUpdatesAcceptable {
         oracle.updatePrice(1075); // +7.5%
         oracle.updatePrice(1100); // +10% (at the limit)
         oracle.updatePrice(900); // -10% (at the limit)
-        oracle.updatePrice(1000); // back to initial
     }
 }
 
@@ -128,7 +105,7 @@ contract BatchPriceUpdatesUnacceptable {
         oracle = Oracle(oracle_);
     }
 
-    fallback() external {
+    function batchPriceUpdates() external {
         // Start with acceptable updates
         oracle.updatePrice(1050); // +5%
         oracle.updatePrice(1075); // +7.5%

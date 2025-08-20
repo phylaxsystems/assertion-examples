@@ -13,7 +13,6 @@ contract TestPositionSumAssertion is CredibleTest, Test {
     address public user2 = address(0xbeef);
     uint256 public depositAmount1 = 100 ether;
     uint256 public depositAmount2 = 50 ether;
-    string constant ASSERTION_LABEL = "PositionSumAssertion";
 
     function setUp() public {
         protocol = new Lending();
@@ -23,56 +22,45 @@ contract TestPositionSumAssertion is CredibleTest, Test {
     }
 
     function test_assertionValidDeposit() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(PositionSumAssertion).creationCode, abi.encode(protocol));
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PositionSumAssertion).creationCode,
+            fnSelector: PositionSumAssertion.assertionPositionsSum.selector
+        });
 
         // Make a valid deposit
         vm.prank(user1);
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.deposit.selector, abi.encode(user1, depositAmount1))
-        );
+        protocol.deposit(user1, depositAmount1);
     }
 
     function test_assertionInvalidDeposit() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(PositionSumAssertion).creationCode, abi.encode(protocol));
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PositionSumAssertion).creationCode,
+            fnSelector: PositionSumAssertion.assertionPositionsSum.selector
+        });
 
         // Make a deposit of 42 ether, which will trigger the special case
         // where total supply increases by 43 ether instead
         vm.prank(user1);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.deposit.selector, abi.encode(user1, 42 ether))
-        );
+        vm.expectRevert("Positions sum does not match total supply");
+        protocol.deposit(user1, 42 ether);
     }
 
     function test_assertionMultipleDeposits() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(PositionSumAssertion).creationCode, abi.encode(protocol));
-
         // Create a batch depositor that will make multiple deposits
         BatchDeposits batchDepositor = new BatchDeposits(address(protocol));
 
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PositionSumAssertion).creationCode,
+            fnSelector: PositionSumAssertion.assertionPositionsSum.selector
+        });
+
         // Execute the batch deposits
         vm.prank(user1);
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchDepositor),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        (bool success,) = address(batchDepositor).call(new bytes(0)); // Empty calldata triggers fallback
+        require(success, "Batch deposits failed");
     }
 }
 

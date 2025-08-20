@@ -44,10 +44,10 @@ contract CallFrameContextAssertion is Assertion {
         // Get the caller of the transaction
         (address to, uint256 amount) = abi.decode(callFrameContext.input, (address, uint256));
 
-        ph.forkPreState();
+        ph.forkPreTx();
         // Read the state before the call
 
-        ph.forkPostState();
+        ph.forkPostTx();
         // Read the state after the call
 
         // Assert the expected outcome here

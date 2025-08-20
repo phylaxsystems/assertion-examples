@@ -14,16 +14,13 @@ contract StateChangesTest is CredibleTest, Test {
     }
 
     function test_assertionStateChanges() public {
-        cl.addAssertion(
-            "StateChangesAssertion", address(protocol), type(StateChangesAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(StateChangesAssertion).creationCode,
+            fnSelector: StateChangesAssertion.assertionStateChanges.selector
+        });
 
         vm.prank(address(0x1));
-        cl.validate(
-            "StateChangesAssertion",
-            address(protocol),
-            0,
-            abi.encodeWithSelector(MonotonicallyIncreasingValue.setValue.selector, 1)
-        );
+        protocol.setValue(1);
     }
 }

@@ -13,7 +13,6 @@ contract TestEtherDrain is CredibleTest, Test {
     address payable public owner = payable(address(0xbeef));
     address payable public user = payable(address(0x1234));
     address payable public whitelistedAddress = payable(address(0xacab));
-    string constant ASSERTION_LABEL = "EtherDrainAssertion";
 
     // Max drain percentage for tests
     uint256 public constant MAX_DRAIN_PERCENTAGE = 10; // 10%
@@ -29,123 +28,66 @@ contract TestEtherDrain is CredibleTest, Test {
     }
 
     function test_assertionSmallEtherDrain() public {
-        address protocolAddress = address(protocol);
-
-        // Create whitelist array with the owner address
-        address[] memory whitelist = new address[](1);
-        whitelist[0] = owner;
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(EtherDrainAssertion).creationCode,
-            abi.encode(protocol, MAX_DRAIN_PERCENTAGE, whitelist)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EtherDrainAssertion).creationCode,
+            fnSelector: EtherDrainAssertion.assertionEtherDrain.selector
+        });
 
         vm.prank(user);
         // This should pass because we're draining less than the max percentage (10 ETH = 10%)
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.withdrawToTreasury.selector, abi.encode(9 ether))
-        );
+        protocol.withdrawToTreasury(9 ether);
     }
 
     function test_assertionLargeEtherDrainToWhitelisted() public {
-        address protocolAddress = address(protocol);
-
-        // Create whitelist array with the whitelisted address
-        address[] memory whitelist = new address[](1);
-        whitelist[0] = whitelistedAddress;
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(EtherDrainAssertion).creationCode,
-            abi.encode(protocol, MAX_DRAIN_PERCENTAGE, whitelist)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EtherDrainAssertion).creationCode,
+            fnSelector: EtherDrainAssertion.assertionEtherDrain.selector
+        });
 
         vm.prank(user);
-        // This should pass because we're sending to a whitelisted address, even though it's more than 10%
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.withdrawToAddress.selector, abi.encode(whitelistedAddress, 20 ether))
-        );
+        // This should revert because we're sending more than 10% (simplified assertion)
+        vm.expectRevert("Large ETH drain detected - exceeds allowed percentage");
+        protocol.withdrawToAddress(whitelistedAddress, 20 ether);
     }
 
     function test_assertionLargeEtherDrainToNonWhitelisted() public {
-        address protocolAddress = address(protocol);
-
-        // Create whitelist array with a different address
-        address[] memory whitelist = new address[](1);
-        whitelist[0] = whitelistedAddress;
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(EtherDrainAssertion).creationCode,
-            abi.encode(protocol, MAX_DRAIN_PERCENTAGE, whitelist)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EtherDrainAssertion).creationCode,
+            fnSelector: EtherDrainAssertion.assertionEtherDrain.selector
+        });
 
         vm.prank(user);
         // This should revert because we're sending more than 10% to a non-whitelisted address
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.withdrawToAddress.selector, abi.encode(treasury, 20 ether))
-        );
+        vm.expectRevert("Large ETH drain detected - exceeds allowed percentage");
+        protocol.withdrawToAddress(treasury, 20 ether);
     }
 
     function test_assertionFullDrainToWhitelisted() public {
-        address protocolAddress = address(protocol);
-
-        // Create whitelist array with the whitelisted address
-        address[] memory whitelist = new address[](1);
-        whitelist[0] = whitelistedAddress;
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(EtherDrainAssertion).creationCode,
-            abi.encode(protocol, MAX_DRAIN_PERCENTAGE, whitelist)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EtherDrainAssertion).creationCode,
+            fnSelector: EtherDrainAssertion.assertionEtherDrain.selector
+        });
 
         vm.prank(user);
-        // This should pass because we're draining to a whitelisted address
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.drainToAddress.selector, abi.encode(whitelistedAddress))
-        );
+        // This should revert because we're draining everything (more than 10%)
+        vm.expectRevert("Large ETH drain detected - exceeds allowed percentage");
+        protocol.drainToAddress(whitelistedAddress);
     }
 
     function test_assertionFullDrainToNonWhitelisted() public {
-        address protocolAddress = address(protocol);
-
-        // Create empty whitelist array
-        address[] memory whitelist = new address[](0);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(EtherDrainAssertion).creationCode,
-            abi.encode(protocol, MAX_DRAIN_PERCENTAGE, whitelist)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(EtherDrainAssertion).creationCode,
+            fnSelector: EtherDrainAssertion.assertionEtherDrain.selector
+        });
 
         vm.prank(user);
         // This should revert because we're draining everything to a non-whitelisted address
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.drainToOwner.selector));
+        vm.expectRevert("Large ETH drain detected - exceeds allowed percentage");
+        protocol.drainToOwner();
     }
 }

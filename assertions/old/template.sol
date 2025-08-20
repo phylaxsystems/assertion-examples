@@ -21,17 +21,17 @@ contract ExampleAssertion is Assertion {
     // TODO: Describe the assertion
     // revert if the assertion fails
     function assertionExample() external {
-        ph.forkPreState();
+        ph.forkPreTx();
         address preOwner = example.owner();
-        ph.forkPostState();
+        ph.forkPostTx();
         address postOwner = example.owner();
         require(preOwner == postOwner, "Owner is not the same before and after the transaction");
     }
 
     // function assertionAnotherExample() external {
-    //     ph.forkPreState();
+    //     ph.forkPreTx();
     //     address preOwner = example.admin();
-    //     ph.forkPostState();
+    //     ph.forkPostTx();
     //     address postOwner = example.admin();
     //     require(preOwner == postOwner, "Owner is not the same before and after the transaction");
     // }

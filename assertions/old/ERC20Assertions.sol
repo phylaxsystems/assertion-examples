@@ -28,16 +28,16 @@ abstract contract ERC20Assertions is Assertion {
     // Balance vulnerability
     // Don't allow balance to be zero
     function assertionBalanceDrained() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         return erc20.balanceOf(smartContract) != 0;
     }
 
     // Balance vulnerability
     // Don't allow balance to be reduced by more than 10%
     function assertionBalanceReduced10() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 previousBalance = erc20.balanceOf(smartContract);
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newBalance = erc20.balanceOf(smartContract);
         uint256 tenPercent = previousBalance / 10;
         return newBalance >= previousBalance - tenPercent;
@@ -47,7 +47,7 @@ abstract contract ERC20Assertions is Assertion {
     // Don't give full allowance to external contract
     // Probably there are cases where you want to do that, but in most cases you don't
     function assertionFullAllowance() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         return erc20.allowance(smartContract, someExternalContract) != erc20.balanceOf(smartContract);
     }
 
@@ -55,9 +55,9 @@ abstract contract ERC20Assertions is Assertion {
     // Don't allow allowance over 90%
     // Probably there are cases where you want to do that, but in most cases you don't
     function assertionAllowanceReduced90() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 previousAllowance = erc20.allowance(smartContract, someExternalContract);
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newAllowance = erc20.allowance(smartContract, someExternalContract);
         uint256 ninetyPercent = (previousAllowance / 10) * 9;
         return newAllowance <= ninetyPercent;
@@ -67,7 +67,7 @@ abstract contract ERC20Assertions is Assertion {
     // Dont allow max allowance to be set
     // Probably there are cases where you want to do that, but in most cases you don't
     function assertionMaxAllowance() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         return erc20.allowance(smartContract, someExternalContract) != type(uint256).max;
     }
 

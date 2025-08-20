@@ -15,18 +15,13 @@ contract FunctionCallInputsTest is CredibleTest, Test {
 
     function test_assertionFunctionCallInputs() public {
         protocol.mint(address(0x1), 100);
-        cl.addAssertion(
-            "FunctionCallInputsAssertion",
-            address(protocol),
-            type(FunctionCallInputsAssertion).creationCode,
-            abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(FunctionCallInputsAssertion).creationCode,
+            fnSelector: FunctionCallInputsAssertion.assertionFunctionCallInputs.selector
+        });
         vm.prank(address(0x1));
-        cl.validate(
-            "FunctionCallInputsAssertion",
-            address(protocol),
-            0,
-            abi.encodeWithSelector(Protocol.transfer.selector, address(0x2), 100)
-        );
+
+        protocol.transfer(address(0x2), 100);
     }
 }

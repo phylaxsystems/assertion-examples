@@ -14,19 +14,14 @@ contract Protocol {
 
 /// It is possible to get the value of any slot of the state before or after a transaction.
 /// This can be used to read private state variables.
-/// Note: It is possible to read the state before or after a transaction by using the forkPreState or forkPostState cheatcodes.
+/// Note: It is possible to read the state before or after a transaction by using the forkPreTx or forkPostTx cheatcodes.
 contract StorageLookupAssertion is Assertion {
-    Protocol public protocol;
-
-    constructor(Protocol protocol_) {
-        protocol = protocol_;
-    }
-
     function triggers() public view override {
         registerCallTrigger(this.assertionStorageLookup.selector);
     }
 
     function assertionStorageLookup() public view {
+        Protocol protocol = Protocol(ph.getAssertionAdopter());
         address[] memory whitelist = new address[](2);
         whitelist[0] = address(0x1);
         whitelist[1] = address(0x2);

@@ -19,17 +19,12 @@ contract MonotonicallyIncreasingValue {
 /// there is no guarantee that each index of the two arrays are related.
 /// Note: The returned array is ordered by the timely order of the state changes.
 contract StateChangesAssertion is Assertion {
-    MonotonicallyIncreasingValue public protocol;
-
-    constructor(MonotonicallyIncreasingValue protocol_) {
-        protocol = protocol_;
-    }
-
     function triggers() public view override {
         registerCallTrigger(this.assertionStateChanges.selector);
     }
 
     function assertionStateChanges() public view {
+        MonotonicallyIncreasingValue protocol = MonotonicallyIncreasingValue(ph.getAssertionAdopter());
         uint256[] memory changes = getStateChangesUint(address(protocol), 0x0);
         for (uint256 i = 0; i < changes.length - 1; i++) {
             require(changes[i] < changes[i + 1], "Value is not monotonically increasing");

@@ -14,7 +14,6 @@ contract TestOwnerChange is CredibleTest, Test {
     address public newOwner = address(0xacab);
     address public newAdmin = address(0xcafe);
     address public user = address(0x1234);
-    string constant ASSERTION_LABEL = "OwnerChangeAssertion";
 
     function setUp() public {
         protocol = new Ownership(initialOwner, initialAdmin);
@@ -23,60 +22,58 @@ contract TestOwnerChange is CredibleTest, Test {
     }
 
     function test_assertionOwnerChanged() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(OwnerChangeAssertion).creationCode,
+            fnSelector: OwnerChangeAssertion.assertionOwnerChange.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because owner is changing
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setOwner.selector, abi.encode(newOwner))
-        );
+        vm.expectRevert("Owner changed");
+        protocol.setOwner(newOwner);
     }
 
     function test_assertionOwnerNotChanged() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(OwnerChangeAssertion).creationCode,
+            fnSelector: OwnerChangeAssertion.assertionOwnerChange.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
-        // This should pass because we're setting the same owner
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setOwner.selector, abi.encode(initialOwner))
-        );
+        // This reverts because no assertion was triggered
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
+        protocol.setOwner(initialOwner);
     }
 
     function test_assertionAdminChanged() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(OwnerChangeAssertion).creationCode,
+            fnSelector: OwnerChangeAssertion.assertionAdminChange.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because admin is changing
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setAdmin.selector, abi.encode(newAdmin))
-        );
+        vm.expectRevert("Admin changed");
+        protocol.setAdmin(newAdmin);
     }
 
     function test_assertionAdminNotChanged() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(ASSERTION_LABEL, protocolAddress, type(OwnerChangeAssertion).creationCode, abi.encode(protocol));
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(OwnerChangeAssertion).creationCode,
+            fnSelector: OwnerChangeAssertion.assertionAdminChange.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
-        // This should pass because we're setting the same admin
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setAdmin.selector, abi.encode(initialAdmin))
-        );
+        // This reverts because no assertion was triggered
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
+        protocol.setAdmin(initialAdmin);
     }
 }

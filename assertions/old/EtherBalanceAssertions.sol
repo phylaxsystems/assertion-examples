@@ -19,21 +19,21 @@ contract EtherBalanceAssertions is Assertion {
     // where the contract address has been funded prior to deployment
     // Don't allow ether balance to be more than 0
     function assertionEtherBalance() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         return address(smartContract).balance == 0;
     }
 
     // Don't allow ether balance to be reduced by more than 90%
     function assertionEtherReduced90() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 previousBalance = address(smartContract).balance;
-        ph.forkPostState();
+        ph.forkPostTx();
         return address(smartContract).balance >= (previousBalance / 10);
     }
 
     // Dont allow ether balance to be drained
     function assertionEtherDrained() external returns (bool) {
-        ph.forkPostState();
+        ph.forkPostTx();
         return address(smartContract).balance >= 0;
     }
 }

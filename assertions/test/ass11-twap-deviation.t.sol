@@ -10,7 +10,6 @@ contract TestTwapDeviation is CredibleTest, Test {
     // Contract state variables
     Pool public protocol;
     address public user = address(0x1234);
-    string constant ASSERTION_LABEL = "TwapDeviationAssertion";
 
     // Test constants
     uint256 public initialPrice = 1000e18; // $1000
@@ -23,85 +22,82 @@ contract TestTwapDeviation is CredibleTest, Test {
     }
 
     function test_assertionSmallDeviation() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
         // This should pass because the price deviation is within 5%
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setPriceWithoutTwapUpdate.selector, abi.encode(smallDeviation))
-        );
+        protocol.setPriceWithoutTwapUpdate(smallDeviation);
     }
 
     function test_assertionLargeDeviation() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
         // This should revert because the price deviation exceeds 5%
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setPriceWithoutTwapUpdate.selector, abi.encode(largeDeviation))
-        );
+        vm.expectRevert("Price deviation from TWAP exceeds maximum allowed");
+        protocol.setPriceWithoutTwapUpdate(largeDeviation);
     }
 
     function test_assertionMultiplePriceUpdates() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
-        );
-
         // Create a batch updater that will make multiple price updates
         BatchPriceUpdates batchUpdater = new BatchPriceUpdates(address(protocol));
 
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
+
         // Execute the batch updates
         vm.prank(user);
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchUpdater),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        (bool success,) = address(batchUpdater).call(""); // Empty calldata triggers fallback
+        require(success, "Batch price updates failed");
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
+
+        vm.prank(user);
+        batchUpdater.batchPriceUpdates();
     }
 
     function test_assertionMultiplePriceUpdatesWithInvalid() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(TwapDeviationAssertion).creationCode, abi.encode(protocol)
-        );
-
         // Create a batch updater that will make multiple price updates
         InvalidBatchPriceUpdates batchUpdater = new InvalidBatchPriceUpdates(address(protocol));
 
-        // Execute the batch updates
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
+
+        // Execute the batch updates that are expected to fail
+        // Due to low level call, the assertions is only triggered in the return statement
         vm.prank(user);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchUpdater),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        (bool success,) = address(batchUpdater).call(""); // Empty calldata triggers fallback
+        require(!success, "Price deviation from TWAP exceeds maximum allowed");
+
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(TwapDeviationAssertion).creationCode,
+            fnSelector: TwapDeviationAssertion.assertionTwapDeviation.selector
+        });
+
+        vm.prank(user);
+        vm.expectRevert("Price deviation from TWAP exceeds maximum allowed");
+        batchUpdater.batchPriceUpdates();
     }
 }
 
@@ -115,6 +111,20 @@ contract BatchPriceUpdates {
     fallback() external {
         // Make multiple price updates in a single transaction
         // Each update is within 5% of the initial price
+        pool.setPriceWithoutTwapUpdate(1020e18); // +2%
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
+        pool.setPriceWithoutTwapUpdate(1040e18); // +4%
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
+        pool.setPriceWithoutTwapUpdate(1020e18); // +2%
+        pool.setPriceWithoutTwapUpdate(1010e18); // +1%
+        pool.setPriceWithoutTwapUpdate(1000e18); // 0%
+        pool.setPriceWithoutTwapUpdate(990e18); // -1%
+        pool.setPriceWithoutTwapUpdate(980e18); // -2%
+        pool.setPriceWithoutTwapUpdate(970e18); // -3%
+    }
+
+    // For testing it's better to use a function call instead of a fallback to avoid low level call
+    function batchPriceUpdates() external {
         pool.setPriceWithoutTwapUpdate(1020e18); // +2%
         pool.setPriceWithoutTwapUpdate(1030e18); // +3%
         pool.setPriceWithoutTwapUpdate(1040e18); // +4%
@@ -148,5 +158,14 @@ contract InvalidBatchPriceUpdates {
         pool.setPriceWithoutTwapUpdate(1000e18); // 0%
         pool.setPriceWithoutTwapUpdate(990e18); // -1%
         pool.setPriceWithoutTwapUpdate(980e18); // -2%
+    }
+
+    // For testing it's better to use a function call instead of a fallback to avoid low level call
+    function batchPriceUpdates() external {
+        pool.setPriceWithoutTwapUpdate(1020e18); // +2%
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
+        pool.setPriceWithoutTwapUpdate(1040e18); // +4%
+        pool.setPriceWithoutTwapUpdate(1060e18); // +6% - This exceeds the 5% limit
+        pool.setPriceWithoutTwapUpdate(1030e18); // +3%
     }
 }

@@ -14,15 +14,12 @@ contract StorageLookupTest is CredibleTest, Test {
 
     function test_assertionStorageLookup() public {
         protocol.setOwner(address(0x1));
-        cl.addAssertion(
-            "StorageLookupAssertion", address(protocol), type(StorageLookupAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(StorageLookupAssertion).creationCode,
+            fnSelector: StorageLookupAssertion.assertionStorageLookup.selector
+        });
         vm.prank(address(0x1));
-        cl.validate(
-            "StorageLookupAssertion",
-            address(protocol),
-            0,
-            abi.encodeWithSelector(Protocol.setOwner.selector, address(0x2))
-        );
+        protocol.setOwner(address(0x2));
     }
 }

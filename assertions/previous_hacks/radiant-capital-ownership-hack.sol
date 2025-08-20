@@ -32,9 +32,9 @@ contract LendingPoolAddressesProviderAssertions is Assertion {
     // Check if the owner has changed
     // revert if the assertion fails
     function assertionOwnerChange() external {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevOwner = lendingPoolAddressesProvider.owner();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newOwner = lendingPoolAddressesProvider.owner();
         require(prevOwner == newOwner, "Owner change assertion failed");
     }
@@ -42,9 +42,9 @@ contract LendingPoolAddressesProviderAssertions is Assertion {
     // Check if the emergency admin has changed
     // revert if the assertion fails
     function assertionEmergencyAdminChange() external {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevEmergencyAdmin = lendingPoolAddressesProvider.getEmergencyAdmin();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newEmergencyAdmin = lendingPoolAddressesProvider.getEmergencyAdmin();
         require(prevEmergencyAdmin == newEmergencyAdmin, "Emergency admin change assertion failed");
     }
@@ -52,9 +52,9 @@ contract LendingPoolAddressesProviderAssertions is Assertion {
     // Check if the pool admin has changed
     // revert if the assertion fails
     function assertionPoolAdminChange() external {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevPoolAdmin = lendingPoolAddressesProvider.getPoolAdmin();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newPoolAdmin = lendingPoolAddressesProvider.getPoolAdmin();
         require(prevPoolAdmin == newPoolAdmin, "Pool admin change assertion failed");
     }
@@ -62,9 +62,9 @@ contract LendingPoolAddressesProviderAssertions is Assertion {
     // Check if the price oracle has changed
     // revert if the assertion fails
     function assertionPriceOracleChange() external {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevPriceOracle = lendingPoolAddressesProvider.getPriceOracle();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newPriceOracle = lendingPoolAddressesProvider.getPriceOracle();
         require(prevPriceOracle == newPriceOracle, "Price oracle change assertion failed");
     }
@@ -72,10 +72,13 @@ contract LendingPoolAddressesProviderAssertions is Assertion {
     // Check if the lending pool configurator has changed
     // revert if the assertion fails
     function assertionLendingPoolConfiguratorChange() external {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevLendingPoolConfigurator = lendingPoolAddressesProvider.getLendingPoolConfigurator();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newLendingPoolConfigurator = lendingPoolAddressesProvider.getLendingPoolConfigurator();
-        require(prevLendingPoolConfigurator == newLendingPoolConfigurator, "Lending pool configurator change assertion failed");
+        require(
+            prevLendingPoolConfigurator == newLendingPoolConfigurator,
+            "Lending pool configurator change assertion failed"
+        );
     }
 }

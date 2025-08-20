@@ -9,7 +9,6 @@ import {UniswapV3Pool} from "../../src/ass15-price-within-ticks.sol";
 contract TestPriceWithinTicks is CredibleTest, Test {
     // Contract state variables
     UniswapV3Pool public protocol;
-    string constant ASSERTION_LABEL = "PriceWithinTicksAssertion";
 
     // Initial test values
     int24 public initialTick = 100;
@@ -33,81 +32,61 @@ contract TestPriceWithinTicks is CredibleTest, Test {
     }
 
     function test_assertionValidTick() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(PriceWithinTicksAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PriceWithinTicksAssertion).creationCode,
+            fnSelector: PriceWithinTicksAssertion.priceWithinTicks.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
 
         // This should pass because the new tick is valid: aligned with tickSpacing and within bounds
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setTick.selector, abi.encode(validTick))
-        );
+        protocol.setTick(validTick);
     }
 
     function test_assertionTickNotAligned() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(PriceWithinTicksAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PriceWithinTicksAssertion).creationCode,
+            fnSelector: PriceWithinTicksAssertion.priceWithinTicks.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
 
         // This should revert because the new tick is not aligned with tickSpacing
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setTick.selector, abi.encode(invalidTickNotAligned))
-        );
+        vm.expectRevert("Tick not aligned with spacing");
+        protocol.setTick(invalidTickNotAligned);
     }
 
     function test_assertionTickOutOfBounds() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(PriceWithinTicksAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PriceWithinTicksAssertion).creationCode,
+            fnSelector: PriceWithinTicksAssertion.priceWithinTicks.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
 
         // This should revert because the new tick is outside the allowed global bounds
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setTick.selector, abi.encode(invalidTickTooLarge))
-        );
+        vm.expectRevert("Tick outside global bounds");
+        protocol.setTick(invalidTickTooLarge);
     }
 
     function test_assertionTickSpacingChange() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(PriceWithinTicksAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(PriceWithinTicksAssertion).creationCode,
+            fnSelector: PriceWithinTicksAssertion.priceWithinTicks.selector
+        });
 
         // Set user as the caller
         vm.prank(user);
 
-        // This should pass because we're just changing the tick spacing, not the tick itself
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setTickSpacing.selector, abi.encode(int24(20)))
-        );
+        // This doesn't trigger the assertion because the tick is not changed
+        vm.expectRevert("Expected 1 assertion to be executed, but 0 were executed.");
+        protocol.setTickSpacing(20);
     }
 }

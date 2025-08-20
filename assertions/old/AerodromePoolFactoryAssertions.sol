@@ -31,49 +31,49 @@ abstract contract AerodromePoolFactoryAssertions is Assertion {
     }
 
     function assertionPoolPauserChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevPauser = poolFactory.pauser();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newPauser = poolFactory.pauser();
         return prevPauser == newPauser;
     }
 
     function assertionImplementationChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevImplementation = poolFactory.implementation();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newImplementation = poolFactory.implementation();
         return prevImplementation == newImplementation;
     }
 
     function assertionVoterChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevVoter = poolFactory.voter();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newVoter = poolFactory.voter();
         return prevVoter == newVoter;
     }
 
     function assertionFeeManagerChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         address prevFeeManager = poolFactory.feeManager();
-        ph.forkPostState();
+        ph.forkPostTx();
         address newFeeManager = poolFactory.feeManager();
         return prevFeeManager == newFeeManager;
     }
 
     function assertionFeeChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 prevFee = poolFactory.fee();
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newFee = poolFactory.fee();
         return prevFee == newFee;
     }
 
     function assertionMaxFeeChanged() external returns (bool) {
-        ph.forkPreState();
+        ph.forkPreTx();
         uint256 prevMaxFee = poolFactory.maxFee();
-        ph.forkPostState();
+        ph.forkPostTx();
         uint256 newMaxFee = poolFactory.maxFee();
         return prevMaxFee == newMaxFee;
     }

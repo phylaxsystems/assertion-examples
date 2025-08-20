@@ -10,7 +10,6 @@ contract TestFeeVerification is CredibleTest, Test {
     // Contract state variables
     Pool public protocol;
     address public user = address(0x1234);
-    string constant ASSERTION_LABEL = "AmmFeeVerificationAssertion";
 
     // Fee constants
     uint256 private constant STABLE_POOL_FEE_1 = 1; // 0.1%
@@ -26,127 +25,90 @@ contract TestFeeVerification is CredibleTest, Test {
     }
 
     function test_validFeeChangeStable() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
 
         vm.prank(user);
         // This should pass because we're setting a valid fee for stable pools
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(protocol.setFee.selector, abi.encode(STABLE_POOL_FEE_2))
-        );
+        protocol.setFee(STABLE_POOL_FEE_2);
     }
 
     function test_invalidFeeChangeStable() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
-        );
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
 
         vm.prank(user);
         // This should revert because we're setting an invalid fee for stable pools
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL, protocolAddress, 0, abi.encodePacked(protocol.setFee.selector, abi.encode(INVALID_FEE))
-        );
+        vm.expectRevert("Fee change to unauthorized value");
+        protocol.setFee(INVALID_FEE);
     }
 
     function test_validFeeChangeNonStable() public {
         // Create a non-stable pool
         Pool nonStableProtocol = new Pool(NON_STABLE_POOL_FEE_1, false);
-        address protocolAddress = address(nonStableProtocol);
 
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(AmmFeeVerificationAssertion).creationCode,
-            abi.encode(nonStableProtocol)
-        );
+        cl.assertion({
+            adopter: address(nonStableProtocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
 
         vm.prank(user);
         // This should pass because we're setting a valid fee for non-stable pools
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(nonStableProtocol.setFee.selector, abi.encode(NON_STABLE_POOL_FEE_2))
-        );
+        nonStableProtocol.setFee(NON_STABLE_POOL_FEE_2);
     }
 
     function test_invalidFeeChangeNonStable() public {
         // Create a non-stable pool
         Pool nonStableProtocol = new Pool(NON_STABLE_POOL_FEE_1, false);
-        address protocolAddress = address(nonStableProtocol);
 
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL,
-            protocolAddress,
-            type(AmmFeeVerificationAssertion).creationCode,
-            abi.encode(nonStableProtocol)
-        );
+        cl.assertion({
+            adopter: address(nonStableProtocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
 
         vm.prank(user);
         // This should revert because we're setting an invalid fee for non-stable pools
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            protocolAddress,
-            0,
-            abi.encodePacked(nonStableProtocol.setFee.selector, abi.encode(STABLE_POOL_FEE_1))
-        );
+        vm.expectRevert("Fee change to unauthorized value");
+        nonStableProtocol.setFee(STABLE_POOL_FEE_1);
     }
 
     function test_batchFeeChanges() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
-        );
-
         // Create a batch fee changer that will make multiple fee changes
         BatchFeeChanges batchChanger = new BatchFeeChanges(address(protocol));
 
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
+
         // Execute the batch fee changes
         vm.prank(user);
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchChanger),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        batchChanger.batchFeeChanges();
     }
 
     function test_batchFeeChangesWithInvalid() public {
-        address protocolAddress = address(protocol);
-
-        // Associate the assertion with the protocol
-        cl.addAssertion(
-            ASSERTION_LABEL, protocolAddress, type(AmmFeeVerificationAssertion).creationCode, abi.encode(protocol)
-        );
-
         // Create a batch fee changer that will include an invalid fee change
         BatchFeeChangesWithInvalid batchChanger = new BatchFeeChangesWithInvalid(address(protocol));
 
+        cl.assertion({
+            adopter: address(protocol),
+            createData: type(AmmFeeVerificationAssertion).creationCode,
+            fnSelector: AmmFeeVerificationAssertion.assertFeeVerification.selector
+        });
+
         // Execute the batch fee changes, expecting a revert due to the invalid fee
         vm.prank(user);
-        vm.expectRevert("Assertions Reverted");
-        cl.validate(
-            ASSERTION_LABEL,
-            address(batchChanger),
-            0,
-            new bytes(0) // Empty calldata triggers fallback
-        );
+        vm.expectRevert("Unauthorized fee change detected in callstack");
+        batchChanger.batchFeeChanges();
     }
 }
 
@@ -161,7 +123,7 @@ contract BatchFeeChanges {
         pool = Pool(pool_);
     }
 
-    fallback() external {
+    function batchFeeChanges() external {
         // Make multiple fee changes in a single transaction
         // Alternate between allowed fee values for stable pools
         pool.setFee(STABLE_POOL_FEE_1);
@@ -189,7 +151,7 @@ contract BatchFeeChangesWithInvalid {
         pool = Pool(pool_);
     }
 
-    fallback() external {
+    function batchFeeChanges() external {
         // Make multiple fee changes in a single transaction
         // Start with valid fees but include an invalid one
         pool.setFee(STABLE_POOL_FEE_1);
