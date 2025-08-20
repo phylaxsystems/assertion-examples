@@ -30,7 +30,7 @@ contract Farcaster {
      * @param message The message to validate
      * @return A boolean indicating whether the message is valid
      */
-    function isValidMessage(Message memory message) external view returns (bool) {
+    function isValidMessage(Message memory message) external pure returns (bool) {
         // Very basic checks:
         // 1. Message must have a non-zero author address
         // 2. Content must not be empty
@@ -62,7 +62,7 @@ contract Farcaster {
      * @param message The message containing the signature to verify
      * @return A boolean indicating whether the signature is valid
      */
-    function verifySignature(Message memory message) external view returns (bool) {
+    function verifySignature(Message memory message) external pure returns (bool) {
         // For testing purposes, we're just checking if the signature isn't "invalidSignature"
         // In a real implementation, this would do proper cryptographic verification
         return keccak256(message.signature) != keccak256(INVALID_SIGNATURE);
