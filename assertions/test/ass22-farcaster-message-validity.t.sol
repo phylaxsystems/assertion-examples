@@ -87,7 +87,6 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         protocol.postMessage(validMessage);
     }
 
-    // TODO: This is panicking the application due to the slicing error
     function test_assertionUsernameUniqueness() public {
         cl.assertion({
             adopter: address(protocol),
@@ -113,7 +112,6 @@ contract TestFarcasterMessageValidity is CredibleTest, Test {
         protocol.register(testUsername, user);
     }
 
-    // TODO: This is panicking the application due to the slicing error
     function test_assertionRateLimit() public {
         // Add time to avoid initial rate limit issues
         vm.warp(block.timestamp + 2 minutes);

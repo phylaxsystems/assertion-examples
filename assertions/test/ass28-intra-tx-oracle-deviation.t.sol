@@ -47,6 +47,7 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
     function test_assertionBatchAcceptablePriceUpdates() public {
         // Create a batch updater with all acceptable price updates
         BatchPriceUpdatesAcceptable batchUpdater = new BatchPriceUpdatesAcceptable(address(protocol));
+        assertEq(protocol.price(), initialPrice);
 
         cl.assertion({
             adopter: address(protocol),
@@ -57,6 +58,8 @@ contract TestIntraTxOracleDeviation is CredibleTest, Test {
         // Execute the batch updates
         vm.prank(user);
         batchUpdater.batchPriceUpdates();
+
+        assertEq(protocol.price(), 900);
     }
 
     function test_assertionBatchUnacceptablePriceUpdates() public {
@@ -92,7 +95,6 @@ contract BatchPriceUpdatesAcceptable {
         oracle.updatePrice(1075); // +7.5%
         oracle.updatePrice(1100); // +10% (at the limit)
         oracle.updatePrice(900); // -10% (at the limit)
-        oracle.updatePrice(1000); // back to initial
     }
 }
 

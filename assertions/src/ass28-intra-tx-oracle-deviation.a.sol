@@ -46,7 +46,6 @@ contract IntraTxOracleDeviationAssertion is Assertion {
             ph.forkPostCall(priceUpdates[i].id);
 
             // Call the price function at the given frame in the call stack
-            // TODO: This is panicking the application due to the slicing error
             uint256 updatedPrice = adopter.price();
 
             // Verify each update is within allowed deviation from initial pre-state price
